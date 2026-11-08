@@ -1,0 +1,11 @@
+{
+  "name": "allowance",
+  "version": "0.1.0",
+  "description": "Spending limits for AI agents: an agent runs a small business on NEAR inside rules it cannot break.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

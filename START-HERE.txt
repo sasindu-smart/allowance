@@ -1,0 +1,10 @@
+Allowance - how to run on Windows
+
+1. Install Node.js (LTS) from https://nodejs.org if you have not already.
+2. Unzip this folder. Open it in VS Code (File > Open Folder), pick the folder that contains package.json.
+3. Open the file named .env and paste your NEAR AI API key after LLM_API_KEY=  (no spaces, no quotes). Save with Ctrl+S.
+   If you leave it empty, the app still works (agent runs in "naive rules" mode).
+4. In VS Code: Terminal > New Terminal, then run:   npm start
+5. Open http://localhost:3000 in your browser.
+
+Do NOT upload the .env file to GitHub. It is already listed in .gitignore.

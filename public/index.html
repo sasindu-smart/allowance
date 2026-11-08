@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Allowance</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%230a101c'/%3E%3Cpath d='M11 28V16l9 8 9-8v12' fill='none' stroke='%23d9c08a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --night: #0a101c;
+    --panel: #111b2d;
+    --panel-hi: #17243a;
+    --line: #22314a;
+    --hair: rgba(255,255,255,.07);
+    --ink: #eef2f8;
+    --muted: #9aa8bd;
+    --brand: #d9c08a;
+    --brand-deep: #b99a58;
+    --on-brand: #1a1407;
+    --allow: #62d6a8;
+    --allow-bg: rgba(98,214,168,.13);
+    --hold: #f2a65a;
+    --hold-bg: rgba(242,166,90,.12);
+    --block: #ff8091;
+    --block-bg: rgba(255,128,145,.12);
+    --quiet-bg: rgba(255,255,255,.06);
+    --focus: #8fb4ff;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; color: var(--ink); font: 400 15px/1.55 var(--body);
+    background:
+      radial-gradient(900px 380px at 50% -180px, rgba(217,192,138,.14), transparent 70%),
+      var(--night);
+    min-height: 100vh;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 40px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  /* brand bar */
+  .brand { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 1px solid var(--hair); }
+  .lockup { display: flex; align-items: center; gap: 14px; }
+  .lockup svg { width: 44px; height: 44px; flex: none; }
+  .wordmark { font: 700 28px/1 var(--display); letter-spacing: -0.02em; }
+  .strap { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mode { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.02); }
+  .mode b { color: var(--ink); font-weight: 600; }
+  .mode.net { border-color: rgba(217,192,138,.45); color: var(--brand); }
+
+  .headline { margin: 34px 0 26px; max-width: 24ch; font: 700 clamp(30px, 4.6vw, 46px)/1.06 var(--display); letter-spacing: -0.025em; }
+  .lede { margin: -10px 0 26px; max-width: 58ch; color: var(--muted); font-size: 16px; }
+
+  /* panels */
+  .panel { position: relative; background: linear-gradient(160deg, var(--panel-hi), var(--panel) 55%); border: 1px solid var(--line); border-radius: 18px; }
+  .panel::before { content: ""; position: absolute; left: 24px; right: 24px; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,192,138,.7), transparent); }
+  .top { display: grid; grid-template-columns: 5fr 7fr; gap: 16px; }
+  @media (max-width: 820px) { .top { grid-template-columns: 1fr; } }
+
+  .funds { padding: 24px 26px; }
+  .acct { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; }
+  .acct b { color: var(--ink); font-weight: 600; background: var(--quiet-bg); border-radius: 8px; padding: 3px 10px; overflow-wrap: anywhere; }
+  .balance { font: 700 72px/1 var(--display); letter-spacing: -0.035em; margin: 22px 0 4px; font-variant-numeric: tabular-nums; }
+  .balance small { font: 500 20px var(--body); color: var(--brand); letter-spacing: 0; margin-left: 8px; }
+  .meter { margin-top: 24px; }
+  .meter-head { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 9px; }
+  .meter-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .track { height: 8px; background: var(--quiet-bg); border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: linear-gradient(90deg, var(--brand-deep), var(--brand)); border-radius: 999px; width: 0; transition: width .5s ease; }
+
+  .rules { padding: 24px 26px; }
+  .rules h2 { font: 700 19px/1.2 var(--display); margin: 0 0 4px; letter-spacing: -0.01em; }
+  .rules p { margin: 0; color: var(--muted); font-size: 14px; }
+  .ruler { margin: 26px 0 0; }
+  .bar { display: flex; height: 48px; border-radius: 12px; overflow: hidden; gap: 3px; }
+  .seg { display: flex; align-items: center; padding: 0 14px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .seg.allow { background: var(--allow-bg); color: var(--allow); border-radius: 12px 4px 4px 12px; }
+  .seg.hold { background: var(--hold-bg); color: var(--hold); border-radius: 4px; }
+  .seg.block { background: var(--block-bg); color: var(--block); border-radius: 4px 12px 12px 4px; }
+  .ticks { position: relative; height: 22px; margin-top: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .ticks span:first-child { transform: none; }
+  .allowlist { margin-top: 14px; font-size: 14px; color: var(--muted); }
+  .allowlist b { color: var(--ink); font-weight: 600; }
+
+  /* controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 22px 34px; align-items: flex-end; margin: 28px 0 16px; }
+  .group p { margin: 0 0 9px; font-size: 14px; color: var(--muted); }
+  .group .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .spacer { flex: 1; }
+  button { font: 600 14px var(--body); border-radius: 11px; padding: 11px 18px; border: 1px solid transparent; cursor: pointer; transition: transform .06s ease, background .15s ease, border-color .15s ease; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: progress; }
+  .primary { background: linear-gradient(180deg, var(--brand), var(--brand-deep)); color: var(--on-brand); }
+  .primary:hover:not(:disabled) { filter: brightness(1.06); }
+  .danger { background: transparent; color: var(--block); border-color: rgba(255,128,145,.55); }
+  .danger:hover:not(:disabled) { background: var(--block-bg); }
+  .ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+  .ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
+  .approve { background: var(--allow); color: #05241a; }
+  .reject { background: transparent; color: var(--block); border-color: rgba(255,128,145,.55); }
+
+  .latest { display: none; padding: 13px 18px; border-radius: 13px; margin-bottom: 16px; font-weight: 500; border: 1px solid transparent; }
+  .latest.show { display: block; animation: settle .35s ease; }
+  .latest.allow { background: var(--allow-bg); color: var(--allow); border-color: rgba(98,214,168,.4); }
+  .latest.hold { background: var(--hold-bg); color: var(--hold); border-color: rgba(242,166,90,.4); }
+  .latest.block { background: var(--block-bg); color: var(--block); border-color: rgba(255,128,145,.4); }
+  .latest.quiet { background: var(--quiet-bg); color: var(--ink); border-color: var(--line); }
+  @keyframes settle { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* decisions */
+  .tape-head { display: flex; justify-content: space-between; align-items: baseline; padding: 20px 26px 10px; }
+  .tape-head h2 { font: 700 19px/1.2 var(--display); margin: 0; letter-spacing: -0.01em; }
+  .tape-head span { color: var(--muted); font-size: 14px; }
+  .row { display: grid; grid-template-columns: 140px 1fr auto; gap: 8px 18px; align-items: start; padding: 17px 26px 17px 22px; border-top: 1px solid var(--hair); border-left: 4px solid transparent; }
+  .row.allow { border-left-color: var(--allow); }
+  .row.hold { border-left-color: var(--hold); background: linear-gradient(90deg, var(--hold-bg), transparent 70%); }
+  .row.block { border-left-color: var(--block); }
+  .row.quiet { border-left-color: var(--line); }
+  .row.fresh { animation: settle .4s ease; }
+  .row:last-child { border-radius: 0 0 18px 18px; }
+  .verdict { font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; padding-top: 1px; }
+  .verdict i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: currentColor; }
+  .allow .verdict { color: var(--allow); } .hold .verdict { color: var(--hold); } .block .verdict { color: var(--block); } .quiet .verdict { color: var(--muted); }
+  .what { min-width: 0; }
+  .what .memo { font-weight: 500; overflow-wrap: anywhere; }
+  .what .why { color: var(--muted); font-size: 14px; margin-top: 2px; overflow-wrap: anywhere; }
+  .what a { color: var(--focus); font-weight: 500; }
+  .amount { font: 700 21px var(--display); font-variant-numeric: tabular-nums; text-align: right; min-width: 72px; }
+  .amount.in { color: var(--allow); }
+  .acts { display: flex; gap: 8px; margin-top: 11px; }
+  .empty { padding: 44px 26px 48px; text-align: center; color: var(--muted); border-top: 1px solid var(--hair); }
+  .empty b { color: var(--ink); display: block; font: 700 19px var(--display); margin-bottom: 6px; }
+
+  footer { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 720px) {
+    .wordmark { font-size: 24px; }
+    .balance { font-size: 56px; }
+    .row { grid-template-columns: 1fr auto; padding: 15px 16px 15px 14px; }
+    .what { grid-column: 1 / -1; }
+    .spacer { display: none; }
+    .tape-head { padding: 18px 16px 8px; }
+    .funds, .rules { padding: 20px 18px; }
+    .seg { padding: 0 8px; font-size: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="lockup">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecd9ab"/><stop offset="1" stop-color="#b99a58"/></linearGradient></defs>
+        <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="#0d1626" stroke="url(#g)" stroke-width="1.6"/>
+        <path d="M11.5 27.5v-12l8.5 8 8.5-8v12" fill="none" stroke="url(#g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div class="wordmark">Allowance</div>
+        <div class="strap">Spending limits for AI agents</div>
+      </div>
+    </div>
+    <div class="modes" id="modes"></div>
+  </div>
+
+  <h1 class="headline">Give your AI agent a budget it can't break.</h1>
+  <p class="lede">The agent earns and spends money on its own. Every payment is checked against rules you set, and anything above your limit waits for your approval.</p>
+
+  <section class="top">
+    <div class="panel funds">
+      <div class="acct"><span id="acctLabel">Agent account</span><b id="account">-</b></div>
+      <div class="balance"><span id="balance">-</span><small>NEAR</small></div>
+      <div class="meter">
+        <div class="meter-head"><span>Spent today</span><span><b id="spent">0</b> of <span id="limit">0</span> NEAR</span></div>
+        <div class="track" role="progressbar" aria-label="Daily spending" aria-valuemin="0" id="track"><div class="fill" id="fill"></div></div>
+      </div>
+    </div>
+    <div class="panel rules">
+      <h2>What the agent may spend</h2>
+      <p>Every payment is checked against these limits, in NEAR per payment, before any money moves.</p>
+      <div class="ruler">
+        <div class="bar" id="bar"></div>
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <div class="allowlist" id="allowlist"></div>
+    </div>
+  </section>
+
+  <section class="controls" aria-label="Demo controls">
+    <div class="group">
+      <p>Normal operation</p>
+      <div class="btns"><button class="primary" id="step">Let the agent act</button></div>
+    </div>
+    <div class="group">
+      <p>Test the guardrails</p>
+      <div class="btns">
+        <button class="danger" id="attack">Send an attack message</button>
+        <button class="danger" id="attack2" title="Simulates a jailbroken model that obeys the attacker, to show the rules still hold">Attack a compromised agent</button>
+      </div>
+    </div>
+    <div class="group" id="xchain" hidden>
+      <p>Cross-chain payout · NEAR Intents (dry run)</p>
+      <div class="btns">
+        <button class="primary" id="quote">Quote a USDC payout on Base</button>
+        <button class="danger" id="quote2">Quote a payout to a scammer</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ghost" id="reset">Reset demo</button>
+  </section>
+
+  <div class="latest" id="latest" role="status" aria-live="polite"></div>
+
+  <section class="panel" aria-label="Decisions">
+    <div class="tape-head"><h2>Decisions</h2><span id="count"></span></div>
+    <div id="tape"></div>
+  </section>
+
+  <footer>
+    <span>Built for NEAR HACKATHON. Runs on NEAR testnet, so no real funds are used.</span>
+    <span id="foot">Limits are enforced by the policy engine, not by the agent.</span>
+  </footer>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmt = (n) => (Math.round(n * 100) / 100).toString();
+
+const LOOK = {
+  paid:     { tone: "allow", label: "Paid" },
+  received: { tone: "allow", label: "Received" },
+  pending:  { tone: "hold",  label: "Needs approval" },
+  blocked:  { tone: "block", label: "Blocked" },
+  failed:   { tone: "block", label: "Failed" },
+  rejected: { tone: "block", label: "Rejected" },
+  ignored:  { tone: "quiet", label: "Ignored" },
+  quoted:   { tone: "hold",  label: "Quoted (dry run)" },
+};
+
+let seen = new Set();
+let firstRender = true;
+
+async function call(path, method = "GET") {
+  const r = await fetch(path, { method });
+  return r.json();
+}
+
+function renderRules(p) {
+  const max = p.perTxCap * 1.3;
+  const w1 = (p.approvalThreshold / max) * 100;
+  const w2 = ((p.perTxCap - p.approvalThreshold) / max) * 100;
+  const w3 = 100 - w1 - w2;
+  $("bar").innerHTML =
+    `<div class="seg allow" style="width:${w1}%">Pays by itself</div>` +
+    `<div class="seg hold" style="width:${w2}%">Asks you first</div>` +
+    `<div class="seg block" style="width:${w3}%">Never</div>`;
+  $("ticks").innerHTML =
+    `<span style="left:0">0</span>` +
+    `<span style="left:${w1}%">${fmt(p.approvalThreshold)}</span>` +
+    `<span style="left:${w1 + w2}%">${fmt(p.perTxCap)}</span>`;
+  $("allowlist").innerHTML = "Only these recipients: <b>" + p.allowedRecipients.map(esc).join(", ") + "</b>. Everyone else is blocked.";
+}
+
+function describe(t) {
+  const amt = fmt(t.amount);
+  switch (t.status) {
+    case "paid": return { tone: "allow", text: `Paid ${amt} NEAR to ${t.to}. ${t.reason || ""}` };
+    case "received": return { tone: "allow", text: `Received ${amt} NEAR from ${t.from}.` };
+    case "pending": return { tone: "hold", text: `Held ${amt} NEAR to ${t.to}. It needs your approval.` };
+    case "blocked": return { tone: "block", text: `Blocked ${amt} NEAR to ${t.to}. ${t.reason || ""}` };
+    case "rejected": return { tone: "block", text: `You rejected ${amt} NEAR to ${t.to}. No money moved.` };
+    case "failed": return { tone: "block", text: `Payment failed. ${t.reason || ""}` };
+    case "ignored": return { tone: "quiet", text: `The agent ignored the message. ${t.reason || ""}` };
+    default: return null;
+  }
+}
+
+function showLatest(t) {
+  const el = $("latest");
+  const d = t && describe(t);
+  if (!d) { el.className = "latest"; el.textContent = ""; return; }
+  el.className = "latest show " + d.tone;
+  el.textContent = d.text.trim();
+}
+
+function row(t) {
+  const look = LOOK[t.status] || { tone: "quiet", label: t.status };
+  const isNote = t.type === "note";
+  const isIn = t.type === "income";
+  const who = isIn ? "From " + esc(t.from) : isNote ? "Message from an untrusted sender" : "To " + esc(t.to);
+  let link = "";
+  if (t.txHash) {
+    link = String(t.txHash).startsWith("mock-")
+      ? " · " + esc(t.txHash)
+      : ` · <a target="_blank" rel="noopener" href="https://testnet.nearblocks.io/txns/${encodeURIComponent(t.txHash)}">View on explorer</a>`;
+  }
+  const amount = isNote ? "" : (isIn ? "+" : "-") + fmt(t.amount);
+  const acts = t.status === "pending"
+    ? `<div class="acts"><button class="approve" onclick="act('approve',${t.id},this)">Approve</button><button class="reject" onclick="act('reject',${t.id},this)">Reject</button></div>`
+    : "";
+  const fresh = !firstRender && !seen.has(t.id) ? " fresh" : "";
+  return `<article class="row ${look.tone}${fresh}">
+    <div class="verdict"><i></i>${look.label}</div>
+    <div class="what"><div class="memo">${esc(t.memo)}</div><div class="why">${who}${t.reason ? " · " + esc(t.reason) : ""}${link}</div>${acts}</div>
+    <div class="amount ${isIn ? "in" : ""}">${amount}</div>
+  </article>`;
+}
+
+function render(s) {
+  $("xchain").hidden = !s.intentsReady;
+  $("balance").textContent = fmt(s.balance);
+  $("spent").textContent = fmt(s.spentToday);
+  $("limit").textContent = fmt(s.policy.dailyLimit);
+  $("fill").style.width = Math.min(100, (s.spentToday / s.policy.dailyLimit) * 100) + "%";
+  $("track").setAttribute("aria-valuemax", s.policy.dailyLimit);
+  $("track").setAttribute("aria-valuenow", s.spentToday);
+  $("account").textContent = s.account || "demo-treasury";
+  if (s.mode === "near-contract") $("foot").textContent = "Limits are enforced by a NEAR smart contract, not by the agent or this app.";
+  $("acctLabel").textContent = s.mode === "near-contract" ? "Smart contract" : "Agent account";
+  $("modes").innerHTML =
+    (s.mode === "near-contract" ? `<span class="mode net">NEAR testnet · rules enforced on-chain</span>` : s.mode === "near-testnet" ? `<span class="mode net">NEAR testnet</span>` : `<span class="mode">Demo mode</span>`) +
+    `<span class="mode">Agent: <b>${esc(s.agentMode || "-")}</b></span>`;
+  renderRules(s.policy);
+
+  const n = s.txs.length;
+  $("count").textContent = n ? n + (n === 1 ? " decision" : " decisions") : "";
+  $("tape").innerHTML = n
+    ? s.txs.map(row).join("")
+    : `<div class="empty"><b>Nothing has happened yet</b>Choose "Let the agent act" to watch it earn and spend, or send an attack to see the rules hold.</div>`;
+  seen = new Set(s.txs.map((t) => t.id));
+  firstRender = false;
+}
+
+async function run(btn, path, after) {
+  const all = document.querySelectorAll("button");
+  const label = btn.textContent;
+  all.forEach((b) => (b.disabled = true));
+  btn.textContent = "Working...";
+  try {
+    const s = await call(path, "POST");
+    render(s);
+    if (after) after(s);
+  } catch (e) {
+    showLatest({ status: "failed", reason: "Could not reach the server. Is npm start still running?" });
+  } finally {
+    btn.textContent = label;
+    all.forEach((b) => (b.disabled = false));
+  }
+}
+
+function act(kind, id, btn) {
+  run(btn, "/api/" + kind + "/" + id, (s) => showLatest(s.txs.find((t) => t.id === id)));
+}
+$("step").onclick = (e) => run(e.currentTarget, "/api/step", (s) => showLatest(s.entry));
+$("attack").onclick = (e) => run(e.currentTarget, "/api/attack", (s) => showLatest(s.entry));
+$("quote").onclick = (e) => run(e.currentTarget, "/api/intents/quote", (s) => showLatest(s.entry));
+$("quote2").onclick = (e) => run(e.currentTarget, "/api/intents/quote?scenario=scam", (s) => showLatest(s.entry));
+$("attack2").onclick = (e) => run(e.currentTarget, "/api/attack?compromised=1", (s) => showLatest(s.entry));
+$("reset").onclick = (e) => run(e.currentTarget, "/api/reset", () => showLatest(null));
+call("/api/state").then(render);
+</script>
+</body>
+</html>

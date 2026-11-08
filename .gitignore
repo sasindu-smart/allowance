@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.near-credentials/
+submission-payload.json
+contract/build/
+.DS_Store

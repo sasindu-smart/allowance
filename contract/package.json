@@ -1,0 +1,14 @@
+{
+  "name": "allowance-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "near-sdk-js build src/index.js build/allowance.wasm",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "near-sdk-js": "2.0.0"
+  }
+}
