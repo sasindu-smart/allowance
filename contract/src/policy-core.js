@@ -8,6 +8,7 @@
 
 export const NEAR = 10n ** 24n;
 export const DAY_NS = 86_400_000_000_000n;
+export const HOUR_NS = 3_600_000_000_000n;
 
 // Same shape as the demo server's policy, scaled to real testnet amounts
 // (demo 50 / 20 / 10 NEAR  ->  0.5 / 0.2 / 0.1 NEAR with PAYMENT_SCALE=0.01).
@@ -18,12 +19,20 @@ export function defaultPolicy() {
     approvalThreshold: String(NEAR / 10n),
     allowed: [],
     blocked: [],
+    maxPerHour: 0,          // 0 = no rate limit
+    recipientDailyCaps: {}, // optional per-recipient daily cap (yoctoNEAR strings)
   };
 }
 
-export function newState(owner, agent, policy = defaultPolicy()) {
+// guardian (optional): an account that may PAUSE the agent (a circuit breaker) but can never
+// unpause, pay, approve or change rules. Only the owner can do those.
+export function newState(owner, agent, policy = defaultPolicy(), guardian = null) {
   validatePolicy(policy);
-  return { owner, agent, policy, day: "0", spentToday: "0", pending: {}, nextId: 1 };
+  if (guardian !== null && !isAccount(guardian)) throw new Error("Invalid guardian account");
+  return {
+    owner, agent, guardian, paused: false, policy,
+    day: "0", spentToday: "0", spentBy: {}, paidAt: [], pending: {}, nextId: 1,
+  };
 }
 
 const isAmount = (s) => typeof s === "string" && /^\d{1,40}$/.test(s);
@@ -44,6 +53,19 @@ export function validatePolicy(p) {
       throw new Error(`${k} must be a list of at most 50 valid account ids`);
     }
   }
+  const maxPerHour = p.maxPerHour ?? 0;
+  if (!Number.isInteger(maxPerHour) || maxPerHour < 0 || maxPerHour > 1000) {
+    throw new Error("maxPerHour must be a whole number from 0 to 1000");
+  }
+  const caps = p.recipientDailyCaps ?? {};
+  if (typeof caps !== "object" || Array.isArray(caps) || Object.keys(caps).length > 50) {
+    throw new Error("recipientDailyCaps must be an object with at most 50 entries");
+  }
+  for (const [acct, v] of Object.entries(caps)) {
+    if (!isAccount(acct) || !isAmount(v) || BigInt(v) > daily) {
+      throw new Error("recipientDailyCaps entries need a valid account and an amount not above dailyLimit");
+    }
+  }
 }
 
 function event(name, data) {
@@ -60,15 +82,40 @@ export function rollover(state, now) {
   if (state.day !== day) {
     state.day = day;
     state.spentToday = "0";
+    state.spentBy = {};
   }
 }
 
+// Payments made in the last hour (old entries are dropped).
+function recentPayments(state, now) {
+  const cutoff = now - HOUR_NS;
+  state.paidAt = (state.paidAt || []).filter((t) => BigInt(t) > cutoff);
+  return state.paidAt.length;
+}
+
+function rateLimited(state, now) {
+  const max = state.policy.maxPerHour || 0;
+  return max > 0 && recentPayments(state, now) >= max;
+}
+
+// Record a payment that is actually being made.
+function recordPaid(state, to, amount, now) {
+  state.spentToday = String(BigInt(state.spentToday) + amount);
+  state.spentBy = state.spentBy || {};
+  state.spentBy[to] = String(BigInt(state.spentBy[to] ?? "0") + amount);
+  state.paidAt = [...(state.paidAt || []), String(now)];
+}
+
 // Pure decision. Returns { decision: "allow" | "needs_approval" | "block", reason }.
-export function decide(policy, spentToday, to, amount) {
+export function decide(policy, spentToday, to, amount, spentBy = {}) {
   if (amount <= 0n) return { decision: "block", reason: "Amount must be greater than zero" };
   if (policy.blocked.includes(to)) return { decision: "block", reason: "Recipient is on the blocklist" };
   if (!policy.allowed.includes(to)) return { decision: "block", reason: "Recipient is not on the allowlist" };
   if (amount > BigInt(policy.perTxCap)) return { decision: "block", reason: "Amount exceeds the per-payment cap" };
+  const cap = (policy.recipientDailyCaps || {})[to];
+  if (cap !== undefined && BigInt(spentBy[to] ?? "0") + amount > BigInt(cap)) {
+    return { decision: "block", reason: "Would exceed this recipient's daily cap" };
+  }
   if (BigInt(spentToday) + amount > BigInt(policy.dailyLimit)) return { decision: "block", reason: "Would exceed the daily limit" };
   if (amount > BigInt(policy.approvalThreshold)) return { decision: "needs_approval", reason: "Above the approval threshold: owner approval required" };
   return { decision: "allow", reason: "Within policy" };
@@ -79,6 +126,7 @@ export function decide(policy, spentToday, to, amount) {
 export function requestPayment(state, ctx, req) {
   if (ctx.caller !== state.agent) throw new Error("Only the agent can request payments");
   rollover(state, ctx.now);
+  if (state.paused) return refuse(state, "Agent is paused by the owner", req?.to, req?.amount);
 
   const memo = String(req?.memo ?? "").slice(0, 200);
   const to = req?.to;
@@ -86,9 +134,10 @@ export function requestPayment(state, ctx, req) {
   if (!isAmount(req?.amount)) return refuse(state, "Invalid amount", to, req?.amount);
 
   const amount = BigInt(req.amount);
-  const verdict = decide(state.policy, state.spentToday, to, amount);
+  const verdict = decide(state.policy, state.spentToday, to, amount, state.spentBy);
 
   if (verdict.decision === "block") return refuse(state, verdict.reason, to, req.amount);
+  if (rateLimited(state, ctx.now)) return refuse(state, `Rate limit reached: at most ${state.policy.maxPerHour} payments per hour`, to, req.amount);
 
   if (verdict.decision === "needs_approval") {
     const id = state.nextId++;
@@ -101,7 +150,7 @@ export function requestPayment(state, ctx, req) {
   }
 
   if (amount > ctx.balance) return refuse(state, "Insufficient balance", to, req.amount);
-  state.spentToday = String(BigInt(state.spentToday) + amount);
+  recordPaid(state, to, amount, ctx.now);
   return {
     result: { status: "paid", reason: verdict.reason },
     transfer: { to, amount },
@@ -121,12 +170,16 @@ export function approve(state, ctx, id) {
   onlyOwner(state, ctx);
   const p = state.pending[id];
   if (!p) throw new Error("No pending payment with that id");
+  if (state.paused) throw new Error("Agent is paused: unpause before approving");
   rollover(state, ctx.now);
   delete state.pending[id];
 
   const amount = BigInt(p.amount);
   // Limits are checked again: the rules or the day's spending may have changed since the request.
-  const verdict = decide(state.policy, state.spentToday, p.to, amount);
+  let verdict = decide(state.policy, state.spentToday, p.to, amount, state.spentBy);
+  if (verdict.decision !== "block" && rateLimited(state, ctx.now)) {
+    verdict = { decision: "block", reason: `Rate limit reached: at most ${state.policy.maxPerHour} payments per hour` };
+  }
   if (verdict.decision === "block") {
     return { result: { status: "blocked", reason: verdict.reason }, transfer: null,
       logs: [event("payment_blocked", { id, to: p.to, amount: p.amount, reason: verdict.reason })] };
@@ -135,7 +188,7 @@ export function approve(state, ctx, id) {
     return { result: { status: "blocked", reason: "Insufficient balance" }, transfer: null,
       logs: [event("payment_blocked", { id, to: p.to, amount: p.amount, reason: "Insufficient balance" })] };
   }
-  state.spentToday = String(BigInt(state.spentToday) + amount);
+  recordPaid(state, p.to, amount, ctx.now);
   return {
     result: { status: "paid", reason: "Approved by owner" },
     transfer: { to: p.to, amount },
@@ -164,4 +217,26 @@ export function setAgent(state, ctx, agent) {
   if (!isAccount(agent)) throw new Error("Invalid agent account");
   state.agent = agent;
   return { logs: [event("agent_changed", { agent })] };
+}
+
+// Circuit breaker. The owner OR the guardian can pause; only the owner can unpause.
+export function pause(state, ctx, reason = "") {
+  if (ctx.caller !== state.owner && ctx.caller !== state.guardian) {
+    throw new Error("Only the owner or the guardian can pause");
+  }
+  state.paused = true;
+  return { result: { status: "paused" }, logs: [event("paused", { by: ctx.caller, reason: String(reason).slice(0, 200) })] };
+}
+
+export function unpause(state, ctx) {
+  onlyOwner(state, ctx);
+  state.paused = false;
+  return { result: { status: "running" }, logs: [event("unpaused", { by: ctx.caller })] };
+}
+
+export function setGuardian(state, ctx, guardian) {
+  onlyOwner(state, ctx);
+  if (guardian !== null && !isAccount(guardian)) throw new Error("Invalid guardian account");
+  state.guardian = guardian;
+  return { logs: [event("guardian_changed", { guardian })] };
 }

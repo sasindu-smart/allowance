@@ -10,6 +10,8 @@ export class Treasury {
   }
 
   reset() {
+    this.paused = false;
+    this.pauseReason = null;
     this.balance = 100;
     this.spentToday = 0;
     this.txs = [];
@@ -27,7 +29,34 @@ export class Treasury {
     return this.log({ type: "income", from, amount, memo, status: "received" });
   }
 
-  async requestPayment({ to, amount, memo }) {
+  // Kill switch. While paused, every payment is refused before any rule is even checked.
+  async pause(reason = "Paused by the owner", by = "owner") {
+    this.paused = true;
+    this.pauseReason = reason;
+    return this.log({ type: "control", memo: "Agent paused", status: "paused", reason: `${by}: ${reason}` });
+  }
+
+  async resume() {
+    this.paused = false;
+    this.pauseReason = null;
+    return this.log({ type: "control", memo: "Agent resumed", status: "resumed", reason: "Resumed by the owner" });
+  }
+
+  // Circuit breaker: if a payment that was triggered by an untrusted message is blocked, the
+  // guardian pauses the agent. The guardian can only pause; the owner must resume.
+  async requestPayment(req) {
+    if (this.paused) {
+      return this.log({ type: "payment", to: req.to, amount: req.amount, memo: req.memo, status: "blocked",
+        reason: "Agent is paused (kill switch). It stays paused until the owner resumes it" });
+    }
+    const entry = await this.processPayment(req);
+    if (req.untrusted && entry.status === "blocked") {
+      await this.pause("Blocked payment triggered by an untrusted message: " + entry.reason, "guardian");
+    }
+    return entry;
+  }
+
+  async processPayment({ to, amount, memo }) {
     const verdict = evaluate(this.policy, this.spentToday, { to, amount });
     if (verdict.decision === "allow" && amount > this.balance)
       return this.log({ type: "payment", to, amount, memo, status: "blocked", reason: "Insufficient balance" });
@@ -92,6 +121,8 @@ export class Treasury {
       txs: this.txs,
       mode: this.payments.name,
       account: this.payments.account || null,
+      paused: this.paused,
+      pauseReason: this.pauseReason,
     };
   }
 }

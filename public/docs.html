@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Allowance · Docs</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%230a101c'/%3E%3Cpath d='M11 28V16l9 8 9-8v12' fill='none' stroke='%23d9c08a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: dark; --bg:#070b14; --panel:#0e1626; --line:#1c2a42; --hair:rgba(255,255,255,.07); --ink:#eef2f8; --muted:#93a2b8; --gold:#d9c08a; --gold-deep:#b99a58; --allow:#62d6a8; --block:#ff8091; --hold:#f2a65a;
+    --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif; --body:"Instrument Sans","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace; }
+  * { box-sizing: border-box; } html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 16.5px/1.7 var(--body); background-image: radial-gradient(800px 380px at 80% -100px, rgba(217,192,138,.10), transparent 70%); background-repeat:no-repeat; }
+  a { color: var(--gold); } :focus-visible { outline:3px solid #8fb4ff; outline-offset:2px; border-radius:6px; }
+  h1,h2,h3 { font-family:var(--display); letter-spacing:-0.02em; margin:0; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 22px; }
+  .bar { position:sticky; top:0; z-index:10; backdrop-filter:blur(14px); background:rgba(7,11,20,.8); border-bottom:1px solid var(--hair); }
+  .bar .wrap { display:flex; align-items:center; justify-content:space-between; height:66px; }
+  .logo { display:flex; align-items:center; gap:11px; text-decoration:none; color:var(--ink); font:800 20px/1 var(--display); } .logo svg { width:32px; height:32px; }
+  .nav { display:flex; gap:22px; align-items:center; font-size:14.5px; } .nav a { color:var(--muted); text-decoration:none; } .nav a:hover { color:var(--ink); }
+  .btn { background:linear-gradient(180deg,#e8d3a0,var(--gold-deep)); color:#1a1407 !important; padding:9px 16px; border-radius:10px; font-weight:600; }
+  .layout { display:grid; grid-template-columns:230px minmax(0,1fr); gap:56px; padding:44px 0 80px; }
+  @media (max-width:860px) { .layout { grid-template-columns:1fr; gap:24px; } .side { position:static !important; } }
+  .side { position:sticky; top:90px; align-self:start; font-size:14.5px; }
+  .side b { display:block; color:var(--muted); font-weight:500; margin-bottom:10px; }
+  .side a { display:block; padding:6px 12px; border-left:2px solid var(--line); color:var(--muted); text-decoration:none; } .side a:hover { color:var(--ink); border-color:var(--gold); }
+  article h1 { font-size:clamp(34px,4.4vw,50px); font-weight:800; line-height:1.05; } article .lead { color:var(--muted); font-size:19px; max-width:60ch; margin:16px 0 0; }
+  article h2 { font-size:28px; font-weight:800; margin:64px 0 10px; padding-top:20px; border-top:1px solid var(--hair); } article h3 { font-size:19px; margin:26px 0 6px; }
+  article p, article li { max-width:70ch; } article p { margin:10px 0; } article ul { padding-left:22px; } article li { margin:5px 0; }
+  code { font:400 .88em var(--mono); background:rgba(255,255,255,.06); padding:2px 7px; border-radius:6px; }
+  pre { margin:14px 0; padding:16px 18px; border-radius:14px; background:#060a12; border:1px solid var(--line); overflow-x:auto; font:13px/1.65 var(--mono); color:#b8c7dc; } pre code { background:none; padding:0; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:15px; border:1px solid var(--line); border-radius:12px; overflow:hidden; display:block; overflow-x:auto; }
+  th, td { text-align:left; padding:11px 15px; border-bottom:1px solid var(--hair); vertical-align:top; } th { color:var(--muted); font-weight:500; font-size:13.5px; background:rgba(255,255,255,.02); } tr:last-child td { border-bottom:0; }
+  .note { padding:14px 18px; border-radius:12px; border:1px solid rgba(242,166,90,.35); background:rgba(242,166,90,.08); margin:18px 0; max-width:70ch; } .note b { color:var(--hold); }
+  .ok { color:var(--allow); } .no { color:var(--block); }
+</style>
+</head>
+<body>
+<div class="bar"><div class="wrap">
+  <a class="logo" href="/"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecd9ab"/><stop offset="1" stop-color="#b99a58"/></linearGradient></defs><rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="#0d1626" stroke="url(#lg)" stroke-width="1.6"/><path d="M11.5 27.5v-12l8.5 8 8.5-8v12" fill="none" stroke="url(#lg)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Allowance</a>
+  <div class="nav"><a href="/">Home</a><a href="https://github.com/sasindu-smart/allowance" target="_blank" rel="noopener">GitHub</a><a class="btn" href="/app">Open the app</a></div>
+</div></div>
+
+<div class="wrap layout">
+  <nav class="side" aria-label="Docs">
+    <b>On this page</b>
+    <a href="#overview">Overview</a><a href="#concepts">Core concepts</a><a href="#decision">How a payment is decided</a><a href="#quickstart">Quickstart</a><a href="#modes">Payment modes</a><a href="#policy">Policy reference</a><a href="#contract">Contract methods</a><a href="#wallet">Owner wallet</a><a href="#security">Security model</a><a href="#limits">Honest limits</a><a href="#faq">FAQ</a>
+  </nav>
+  <article>
+    <h1 id="overview" style="margin-top:0">Documentation</h1>
+    <p class="lead">Allowance lets an AI agent earn and spend NEAR, but only inside rules a human wrote. A smart contract enforces the rules, so a fooled agent still can't overspend.</p>
+
+    <h2 id="concepts">Core concepts</h2>
+    <ul>
+      <li><b>Agent</b>: the account your AI controls. It can only call <code>request_payment</code>.</li>
+      <li><b>Owner</b>: you. You set the rules, approve held payments, pause and resume.</li>
+      <li><b>Guardian</b>: an optional pause-only account, a circuit breaker. It can never pay, approve or resume.</li>
+      <li><b>Policy</b>: caps, daily budget, hourly rate, per-recipient caps, allowlist and blocklist.</li>
+      <li><b>Decision</b>: every request ends as <span class="ok">paid</span>, <span style="color:var(--hold)">held</span> or <span class="no">blocked</span>, with the reason on record.</li>
+    </ul>
+
+    <h2 id="decision">How a payment is decided</h2>
+    <p>Checks run in this order and stop at the first failure:</p>
+    <ol>
+      <li>Is the agent paused? If yes, refuse.</li>
+      <li>Is the recipient on the blocklist? Refuse.</li>
+      <li>Is the recipient on the allowlist? If not, refuse.</li>
+      <li>Is the amount over the per-payment cap? Refuse.</li>
+      <li>Would it exceed today's budget, the hourly rate, or that recipient's daily cap? Refuse.</li>
+      <li>Is the amount above the approval threshold? Hold it for the owner.</li>
+      <li>Otherwise pay.</li>
+    </ol>
+
+    <h2 id="quickstart">Quickstart</h2>
+    <pre><code>git clone https://github.com/sasindu-smart/allowance
+cd allowance
+npm start        # http://localhost:3000
+npm test         # 90 tests</code></pre>
+    <p>The default mode needs nothing else. Open <a href="/app">/app</a>, click <b>Let the agent act</b> a few times, then <b>Send an attack message</b>.</p>
+
+    <h2 id="modes">Payment modes</h2>
+    <table><tr><th>PAYMENT_MODE</th><th>Who enforces the rules</th><th>Money</th></tr>
+      <tr><td><code>mock</code></td><td>This server's policy engine</td><td>None moves</td></tr>
+      <tr><td><code>near-testnet</code></td><td>This server, then a real transfer</td><td>Testnet NEAR, signed from your keychain</td></tr>
+      <tr><td><code>near-contract</code></td><td><b>The smart contract</b> (the server only relays)</td><td>Testnet NEAR paid by the contract</td></tr></table>
+    <p>Set these in <code>.env</code> (copy <code>.env.example</code>). No private key is stored in the repo or in <code>.env</code>; signing uses <code>near-cli-rs</code> with <code>sign-with-keychain</code>.</p>
+
+    <h2 id="policy">Policy reference</h2>
+    <table><tr><th>Field</th><th>Meaning</th></tr>
+      <tr><td><code>perTxCap</code></td><td>Most the agent may spend in one payment</td></tr>
+      <tr><td><code>dailyLimit</code></td><td>Most it may spend per day</td></tr>
+      <tr><td><code>approvalThreshold</code></td><td>Above this, the owner must approve</td></tr>
+      <tr><td><code>allowedRecipients</code></td><td>Only these accounts may be paid</td></tr>
+      <tr><td><code>blockedRecipients</code></td><td>These accounts are never paid</td></tr>
+      <tr><td><code>maxPerHour</code> (contract)</td><td>Rate limit on payments per hour</td></tr>
+      <tr><td><code>recipientDailyCaps</code> (contract)</td><td>Per-recipient daily cap</td></tr></table>
+
+    <h2 id="contract">Contract methods</h2>
+    <table><tr><th>Method</th><th>Who may call</th></tr>
+      <tr><td><code>request_payment</code></td><td>Agent</td></tr>
+      <tr><td><code>approve</code>, <code>reject</code></td><td>Owner</td></tr>
+      <tr><td><code>set_policy</code>, <code>set_agent</code>, <code>set_guardian</code>, <code>unpause</code></td><td>Owner</td></tr>
+      <tr><td><code>pause</code></td><td>Owner or guardian</td></tr>
+      <tr><td><code>get_state</code></td><td>Anyone (view)</td></tr></table>
+    <p>Read the live rules any time:</p>
+    <pre><code>near contract call-function as-read-only sasindudev-allowance2.testnet get_state json-args "{}" network-config testnet now</code></pre>
+
+    <h2 id="wallet">Owner wallet</h2>
+    <p>In <code>near-contract</code> mode, click <b>Connect wallet</b> in the app and choose a wallet (Meteor, Sender, Nightly, HERE and more). Connect the account that is the contract's <b>owner</b>. Approve, reject, pause and resume are then signed in your wallet, and your keys never reach Allowance.</p>
+    <p>After you sign, the server checks the transaction on the NEAR RPC: it must be signed by the owner, sent to this contract, call the expected method, succeed, and (for approve and reject) be about the same payment. Only then does the dashboard update. A transaction hash can be used once.</p>
+    <p>The <b>Live on-chain state</b> card reads <code>get_state</code> directly from the chain, so you can compare the dashboard with the truth.</p>
+
+    <h2 id="security">Security model</h2>
+    <ul>
+      <li>The rules live in the contract, not in the agent. A jailbreak changes what the agent asks for, not what the contract allows.</li>
+      <li>Power is split across three accounts, so one stolen key can only do limited damage.</li>
+      <li>The pause is stored on-chain, so a modified server cannot skip it.</li>
+      <li>Model output is validated before use, and message-triggered payments are marked untrusted.</li>
+    </ul>
+
+    <h2 id="limits">Honest limits</h2>
+    <div class="note"><b>Please read.</b> This is hackathon software on testnet. The contract has not been audited and must not hold real funds. Cross-chain payouts are price quotes only. There is no TEE. Wallet connect depends on third-party wallet libraries loaded from a CDN. Dashboard figures are demo accounting scaled by <code>PAYMENT_SCALE</code>, not the contract's raw balance.</div>
+
+    <h2 id="faq">FAQ</h2>
+    <h3>Does the agent hold my funds?</h3><p>In contract mode the funds sit in the contract account. The agent's key can only call <code>request_payment</code>.</p>
+    <h3>What if the agent is fully jailbroken?</h3><p>The rules aren't inside the agent. Use "Attack a compromised agent" in the app to see a model that obeys every instruction still get refused.</p>
+    <h3>Why did I see "Would exceed the daily limit"?</h3><p>In contract mode the daily counter lives on-chain and resets at UTC midnight. "Reset demo" does not reset it.</p>
+  </article>
+</div>
+</body>
+</html>

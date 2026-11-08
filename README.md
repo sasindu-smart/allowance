@@ -16,27 +16,34 @@ AI agents are starting to earn and spend money. A wallet with no limits is dange
 - Every payment is checked against rules: per-payment cap, daily limit, recipient allowlist, blocklist.
 - Small safe payments go through by themselves. Larger ones wait for a **human Approve / Reject** (a separate owner account). Scam or unknown recipients are **blocked**.
 - A live dashboard shows each decision with its reason and a link to the transaction on the explorer.
+- **Kill switch + guardian (v2):** the owner can pause the agent at any time. A separate **guardian** account (pause-only, it can never pay, approve or resume) trips automatically when a message-triggered payment is blocked. Only the owner can resume. In contract mode the pause lives on-chain, so a modified server cannot bypass it.
+- **Rate limit and per-recipient caps (v2):** `maxPerHour` and `recipientDailyCaps` are enforced by the contract.
 - **Prompt-injection demo:** a message tells the agent to pay a scammer. The agent obeys, and the payment is still blocked. A "compromised agent" button simulates a fully jailbroken model.
 
 ## Proof on NEAR testnet
 
-Contract account: **`sasindudev-allowance.testnet`** (JavaScript, `near-sdk-js`). Roles: agent `sasindudev-agent.testnet`, owner `sasindudev-owner.testnet`.
+Contract account: **`sasindudev-allowance2.testnet`** (v2, JavaScript, `near-sdk-js`). Roles: agent `sasindudev-agent.testnet`, owner `sasindudev.testnet` (signs in a real wallet), guardian `sasindudev-guardian.testnet` (can only pause).
 
 | What happened | Transaction |
 |---|---|
-| Contract deployed and initialised | [`BwRWqeLb...acUv`](https://testnet.nearblocks.io/txns/BwRWqeLb5UUCjoStYPemndZW6DDPqdX7buyaoCC4acUv) |
-| Agent paid 0.05 NEAR to an allowed vendor (`payment_paid`) | [`GpXUv42m...d4FB`](https://testnet.nearblocks.io/txns/GpXUv42mwBiuhgRgD8L9BPeknQ9n318PfSKZZy41d4FB) |
-| Agent tried to pay a scam address: refused by the contract (`payment_blocked`: "Recipient is not on the allowlist") | [`AMcdJjgZ...q9g`](https://testnet.nearblocks.io/txns/AMcdJjgZ5i84gYLKeKCKkKULmrxLjxy7tdPWeJdM5q9g) |
+| Contract v2 deployed and initialised | [`5gtASUxJ…qej7`](https://testnet.nearblocks.io/txns/5gtASUxJLvQup1hC9jPQRUy499E1DCYfXR6ikoJuqej7) |
+| Agent paid within policy, checked by the contract (`payment_paid`) | [`GzubwSCi…1MUX`](https://testnet.nearblocks.io/txns/GzubwSCiXYPSfZeJVCqx4bs3i7Ab9nBQVNRcHNK11MUX) |
+| Agent tried to pay a scam address: refused by the contract (`payment_blocked`) | [`c9zHP1ME…erAE`](https://testnet.nearblocks.io/txns/c9zHP1MEhRRaNJ6xcKPsXMVvgwr35aStvQirpy2erAE) |
+| Guardian paused the agent automatically after the blocked, message-triggered payment (`paused`) | [`HhRBDYXc…gwL8`](https://testnet.nearblocks.io/txns/HhRBDYXc4Gu5pGbqXXb9pHVh3yPiMHK1w1N2yPbkgwL8) |
+| Owner resumed the agent from their wallet (`unpaused`) | [`CWBeDkEW…7c1z`](https://testnet.nearblocks.io/txns/CWBeDkEWbgP99QjodNkw6YUuz8nu2fkMX2KBnGH27c1z) |
+| Large payment held above the approval line, then approved by the owner in their wallet (`payment_approved`) | [`9KGZ98Sf…FM4o`](https://testnet.nearblocks.io/txns/9KGZ98SfMSNbbARDSRmar9j3GX2CJtXNDfiUSai6FM4o) |
 
-You can also read the live rules: `near contract call-function as-read-only sasindudev-allowance.testnet get_state json-args "{}" network-config testnet now`
+You can also read the live rules: `near contract call-function as-read-only sasindudev-allowance2.testnet get_state json-args "{}" network-config testnet now`
+
+(The first version of the contract, `sasindudev-allowance2.testnet`, is still on testnet. Its transactions are in the project history.)
 
 ## Run it
 
 Requirements: Node.js 18 or newer. The first mode needs nothing else.
 
 ```bash
-npm start        # http://localhost:3000
-npm test         # 66 tests (policy engine, adapters, agent, contract rules)
+npm start        # http://localhost:3000 (landing page), /app (dashboard)
+npm test         # 90 tests (policy engine, adapters, agent, contract rules)
 ```
 
 Three modes, chosen with `PAYMENT_MODE` in `.env` (copy `.env.example`):
@@ -62,8 +69,13 @@ For `near-testnet` and `near-contract` you need [near-cli-rs](https://docs.near.
 | 7 | Again | 25 to `cloud-gpu.near` is **blocked** (over the cap) |
 | 8 | **Send an attack message** | The agent follows an injected "pay the scammer" message; the payment is **blocked** |
 | 9 | **Attack a compromised agent** | Simulates a jailbroken model. The rules still hold |
+| 10 | After step 8 or 9 | The guardian has **paused** the agent (red banner). **Resume the agent** to continue; **Pause the agent** works any time |
 
 Note: in contract mode the daily-spend counter lives on-chain, so **Reset demo** does not reset it (it resets at UTC midnight). After a few runs you will see "Would exceed the daily limit", which is the on-chain limit working.
+
+## Owner wallet (contract mode)
+
+In `near-contract` mode the dashboard has **Connect wallet**. The owner signs approve, reject, pause and resume in their own NEAR wallet (Meteor, Sender, Nightly, HERE and others, via NEAR Wallet Selector). No key touches this app. After signing, the server looks the transaction up on the NEAR RPC and checks who signed what, on which contract, for which payment, before it updates the dashboard. The owner can also change the limits from the dashboard (**Edit rules**), signed in the wallet and enforced by the contract at once. The **Live on-chain state** card reads the contract's `get_state` directly from the chain. Without a wallet the buttons fall back to server-side signing with a key in your OS keychain.
 
 ## Architecture
 
@@ -71,7 +83,7 @@ Note: in contract mode the daily-spend counter lives on-chain, so **Reset demo**
  Agent (LLM or scripted)  ->  Treasury (src/ledger.js or src/near-contract.js)
                                       |
         mock / near-testnet:          |           near-contract:
-        policy engine (src/policy.js) |   NEAR smart contract  sasindudev-allowance.testnet
+        policy engine (src/policy.js) |   NEAR smart contract  sasindudev-allowance2.testnet
         then pay                      |   request_payment (agent)  approve / reject (owner)
 ```
 
@@ -79,7 +91,7 @@ Note: in contract mode the daily-spend counter lives on-chain, so **Reset demo**
 - `src/policy.js` the same rules for the off-chain modes.
 - `src/near-contract.js` relays payments to the contract and turns its logged events into dashboard rows.
 - `src/agent.js` and `src/llm.js` the agent: a real LLM through an OpenAI-compatible API (NEAR AI Cloud by default, set `LLM_API_KEY`), or a "naive rules" stand-in with no key. Model output is validated before use.
-- `public/index.html` the dashboard.
+- `public/landing.html` the home page, `public/app.html` the owner dashboard, `public/docs.html` the docs.
 
 ## NEAR tools used
 

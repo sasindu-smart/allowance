@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Allowance · Vault</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%230a101c'/%3E%3Cpath d='M11 28V16l9 8 9-8v12' fill='none' stroke='%23d9c08a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #070b14; --panel: #0e1626; --panel-hi: #141f35; --line: #1c2a42; --hair: rgba(255,255,255,.07);
+    --ink: #eef2f8; --muted: #93a2b8; --gold: #d9c08a; --gold-deep: #b99a58; --on-gold: #1a1407;
+    --allow: #62d6a8; --allow-bg: rgba(98,214,168,.12); --allow-line: rgba(98,214,168,.35);
+    --hold: #f2a65a; --hold-bg: rgba(242,166,90,.12); --hold-line: rgba(242,166,90,.35);
+    --block: #ff8091; --block-bg: rgba(255,128,145,.12); --block-line: rgba(255,128,145,.35);
+    --quiet: rgba(255,255,255,.06);
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15.5px/1.55 var(--body); min-height: 100vh;
+    background-image: radial-gradient(900px 420px at 80% -100px, rgba(217,192,138,.11), transparent 70%); background-repeat: no-repeat; }
+  a { color: inherit; } :focus-visible { outline: 3px solid #8fb4ff; outline-offset: 2px; border-radius: 6px; }
+  h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.02em; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 22px; }
+  .mono { font-family: var(--mono); font-size: .88em; }
+
+  .bar { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); background: rgba(7,11,20,.78); border-bottom: 1px solid var(--hair); }
+  .bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 66px; }
+  .logo { display: flex; align-items: center; gap: 11px; text-decoration: none; font: 800 20px/1 var(--display); }
+  .logo svg { width: 32px; height: 32px; }
+  .nav { display: flex; align-items: center; gap: 22px; font-size: 14.5px; }
+  .nav a.l { color: var(--muted); text-decoration: none; } .nav a.l:hover { color: var(--ink); }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font: 500 13px var(--body); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--muted); white-space: nowrap; }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.ok { color: var(--allow); border-color: var(--allow-line); background: var(--allow-bg); }
+  .pill.off { color: var(--block); border-color: var(--block-line); background: var(--block-bg); }
+  .pill.gold { color: var(--gold); border-color: rgba(217,192,138,.4); }
+  @media (max-width: 760px) { .nav a.l, .bar .hidem { display: none; } }
+
+  button { font: 600 14px var(--body); border-radius: 11px; padding: 10px 17px; border: 1px solid transparent; cursor: pointer; transition: transform .06s, background .15s, border-color .15s, filter .15s; color: var(--ink); background: none; }
+  button:active { transform: translateY(1px); } button:disabled { opacity: .5; cursor: progress; }
+  .b-gold { background: linear-gradient(180deg, #e8d3a0, var(--gold-deep)); color: var(--on-gold); } .b-gold:hover:not(:disabled) { filter: brightness(1.06); }
+  .b-ghost { border-color: var(--line); background: rgba(255,255,255,.03); } .b-ghost:hover:not(:disabled) { border-color: rgba(217,192,138,.5); }
+  .b-danger { border-color: var(--block-line); color: var(--block); background: transparent; } .b-danger:hover:not(:disabled) { background: var(--block-bg); }
+  .b-ok { background: var(--allow); color: #05241a; } .b-ok:hover:not(:disabled) { filter: brightness(1.07); }
+  .frows { display: grid; gap: 4px; margin: 6px 0 10px; }
+  .frow { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 14px; border: 1px solid var(--hair); border-radius: 13px; background: rgba(255,255,255,.025); cursor: text; }
+  .frow:focus-within { border-color: rgba(217,192,138,.55); }
+  .frow b { display: block; font-weight: 600; font-size: 14.5px; } .frow small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; margin-top: 2px; }
+  .fin { display: flex; align-items: center; gap: 8px; flex: none; } .fin i { font-style: normal; color: var(--muted); font-size: 12.5px; width: 34px; }
+  .fin input { width: 84px; background: rgba(0,0,0,.28); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; padding: 9px 10px; font: 600 15px var(--body); text-align: right; font-variant-numeric: tabular-nums; } .fin input:focus { outline: none; border-color: var(--gold); }
+  .ferr { color: var(--block); font-size: 13.5px; margin: 4px 0 8px; } .ferr[hidden] { display: none; }
+  .fbtns { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 8px; } .fbtns .b-gold { padding: 12px 17px; }
+  .b-sm { padding: 7px 13px; font-size: 13.5px; border-radius: 9px; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding: 34px 0 20px; }
+  .head h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 800; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; color: var(--muted); font-size: 14px; }
+  .meta b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 13px; }
+
+  .banner { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--block-line); background: var(--block-bg); color: #ffc2cb; }
+  .banner[hidden] { display: none; } .banner b { color: var(--block); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 960px) { .stats { grid-template-columns: repeat(2, 1fr); } } @media (max-width: 520px) { .stats { grid-template-columns: 1fr; } }
+  .card { border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, var(--panel-hi), var(--panel)); }
+  .stat { padding: 18px 20px; }
+  .stat .k { color: var(--muted); font-size: 13.5px; }
+  .stat .v { font: 800 34px/1.1 var(--display); letter-spacing: -0.03em; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+  .stat .v small { font: 500 14px var(--body); color: var(--gold); margin-left: 6px; letter-spacing: 0; }
+  .stat .s { color: var(--muted); font-size: 13px; }
+  .stat.hot { border-color: var(--hold-line); } .stat.safe { border-color: var(--allow-line); }
+  .track { height: 6px; border-radius: 6px; background: #1a2740; overflow: hidden; margin: 10px 0 2px; } .fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); border-radius: 6px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+
+  .ctl { display: flex; flex-wrap: wrap; gap: 18px 34px; align-items: flex-end; padding: 18px 22px; margin-top: 18px; }
+  .cg { display: grid; gap: 8px; } .cg[hidden] { display: none; } .cg.push { margin-left: auto; }
+  .cl { color: var(--muted); font-size: 13.5px; } .cb { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
+  @media (max-width: 960px) { .cols { grid-template-columns: 1fr; } }
+  .stack { display: grid; gap: 18px; }
+  .ph { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--hair); }
+  .ph h2 { font-size: 18px; display: flex; align-items: center; gap: 10px; } .ph .sub { color: var(--muted); font-size: 13.5px; }
+  .count { font: 600 12.5px var(--body); background: var(--hold-bg); color: var(--hold); border: 1px solid var(--hold-line); padding: 1px 9px; border-radius: 999px; }
+
+  .inbox .it { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 22px; border-bottom: 1px solid var(--hair); background: linear-gradient(90deg, var(--hold-bg), transparent 60%); }
+  .inbox .it:last-child { border-bottom: 0; }
+  .inbox .amt { font: 800 26px var(--display); letter-spacing: -0.02em; } .inbox .amt small { font: 500 13px var(--body); color: var(--gold); margin-left: 5px; }
+  .inbox .to { font: 400 13px var(--mono); color: var(--gold); margin-top: 2px; word-break: break-all; } .inbox .why { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .inbox .acts { display: flex; gap: 8px; }
+  .empty { padding: 34px 22px; text-align: center; color: var(--muted); } .empty b { display: block; color: var(--ink); font: 700 17px var(--display); margin-bottom: 4px; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: 500 13px var(--body); padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: transparent; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: #0a101c; border-color: var(--ink); }
+  .tl .ev { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--hair); align-items: start; }
+  .tl .ev:last-child { border-bottom: 0; } .tl .ev.fresh { animation: pop .45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes pop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  .ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1px solid; font-size: 14px; font-weight: 700; }
+  .ic.allow { color: var(--allow); background: var(--allow-bg); border-color: var(--allow-line); } .ic.hold { color: var(--hold); background: var(--hold-bg); border-color: var(--hold-line); }
+  .ic.block { color: var(--block); background: var(--block-bg); border-color: var(--block-line); } .ic.quiet { color: var(--muted); background: var(--quiet); border-color: var(--line); }
+  .ev .t { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; } .ev .d { color: var(--muted); font-size: 13.5px; margin-top: 1px; overflow-wrap: anywhere; }
+  .ev .d a { color: var(--gold); text-decoration: none; } .ev .d a:hover { text-decoration: underline; }
+  .ev .r { text-align: right; } .ev .r .a { font: 800 17px var(--display); font-variant-numeric: tabular-nums; } .ev .r .a.in { color: var(--allow); } .ev .r .tm { color: var(--muted); font-size: 12.5px; }
+
+  .rules .rw { display: flex; justify-content: space-between; gap: 14px; padding: 13px 22px; border-bottom: 1px solid var(--hair); font-size: 14.5px; }
+  .rules .rw span:first-child { color: var(--muted); } .rules .rw b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; } .chips code { font: 400 12px var(--mono); padding: 3px 9px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+  .chips.bad code { color: var(--block); border-color: var(--block-line); background: var(--block-bg); }
+  .ladder { padding: 18px 22px 20px; } .ladder .bar2 { display: flex; height: 40px; border-radius: 11px; overflow: hidden; gap: 3px; }
+  .ladder .sg { display: flex; align-items: center; padding: 0 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .sg.a { background: var(--allow-bg); color: var(--allow); } .sg.h { background: var(--hold-bg); color: var(--hold); } .sg.b { background: var(--block-bg); color: var(--block); }
+  .ladder .tk { position: relative; height: 20px; margin-top: 6px; font-size: 12.5px; color: var(--muted); } .ladder .tk span { position: absolute; transform: translateX(-50%); } .ladder .tk span:first-child { transform: none; }
+
+  .lab { padding: 18px 22px 20px; display: grid; gap: 10px; } .lab p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .lab .g { display: grid; gap: 8px; } .lab .g > p { margin-top: 6px; color: var(--ink); font-weight: 600; font-size: 14px; }
+  .lab button { width: 100%; text-align: left; }
+  details.term { border-top: 1px solid var(--hair); } details.term summary { cursor: pointer; padding: 15px 22px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+  details.term summary::-webkit-details-marker { display: none; } details.term summary::after { content: "+"; color: var(--gold); font-size: 20px; line-height: 1; } details.term[open] summary::after { content: "–"; }
+  .term pre { margin: 0 22px 18px; padding: 14px 16px; border-radius: 12px; background: #060a12; border: 1px solid var(--line); font: 12.5px/1.6 var(--mono); color: #b8c7dc; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .term pre em { color: var(--gold); font-style: normal; }
+
+  .banner.warn { border-color: var(--hold-line); background: var(--hold-bg); color: #ffd9ae; } .banner.warn b { color: var(--hold); }
+  .modal { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,12,.72); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 18px; } .modal[hidden] { display: none; }
+  .mbox { width: min(440px, 100%); border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(180deg, var(--panel-hi), var(--panel)); padding: 24px; }
+  .mbox h2 { font-size: 22px; } .msub { color: var(--muted); font-size: 14px; margin: 8px 0 14px; }
+  .wlist { display: grid; gap: 10px; } .wopt { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 14px 16px; border-radius: 13px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+  .wopt:hover { border-color: var(--gold-deep); } .wopt small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; max-width: min(560px, 92vw); padding: 13px 18px; border-radius: 14px; border: 1px solid; font-weight: 500; z-index: 30; transition: all .3s; backdrop-filter: blur(10px); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); } .toast.allow { background: rgba(14,40,32,.92); color: var(--allow); border-color: var(--allow-line); }
+  .toast.hold { background: rgba(48,32,12,.92); color: var(--hold); border-color: var(--hold-line); } .toast.block { background: rgba(52,18,26,.92); color: var(--block); border-color: var(--block-line); } .toast.quiet { background: rgba(20,31,53,.95); color: var(--ink); border-color: var(--line); }
+  footer { margin: 40px 0 36px; padding-top: 18px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 13.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="bar"><div class="wrap">
+  <a class="logo" href="/" title="Back to the home page"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecd9ab"/><stop offset="1" stop-color="#b99a58"/></linearGradient></defs><rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="#0d1626" stroke="url(#lg)" stroke-width="1.6"/><path d="M11.5 27.5v-12l8.5 8 8.5-8v12" fill="none" stroke="url(#lg)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Allowance</a>
+  <div class="nav">
+    <a class="l" href="/">Home</a><a class="l" href="/docs">Docs</a>
+    <span class="pill hidem" id="modePill">Loading…</span>
+    <span class="pill gold" id="acctPill" hidden></span>
+    <button class="b-ghost b-sm" id="walletBtn">Connect wallet</button>
+  </div>
+</div></div>
+
+<main class="wrap">
+  <div class="head">
+    <div>
+      <h1>Agent vault <span class="pill ok" id="status"><i></i>Guarding</span></h1>
+      <div class="meta"><span>Account <b id="account">-</b></span><span>Agent <b id="agentMode">-</b></span><span id="enf"></span></div>
+    </div>
+    <button class="b-ghost" id="csv">Export activity (CSV)</button>
+  </div>
+
+  <div class="banner warn" id="wrongAcct" hidden><span id="wrongTxt"></span><button class="b-ghost b-sm" id="wswitch">Disconnect</button></div>
+
+  <div class="banner" id="banner" hidden><span><b>The agent is paused.</b> <span id="pauseWhy"></span> Every payment is refused until you resume it.</span><button class="b-gold b-sm" id="resumeTop">Resume the agent</button></div>
+
+  <div class="stats">
+    <div class="card stat"><div class="k">Balance</div><div class="v"><span id="balance">-</span><small>NEAR</small></div><div class="s">Held by the vault, not the agent</div></div>
+    <div class="card stat"><div class="k">Spent today</div><div class="v"><span id="spent">0</span><small>of <span id="limit">0</span></small></div><div class="track"><div class="fill" id="fill"></div></div><div class="s" id="spentNote">Daily budget</div></div>
+    <div class="card stat safe"><div class="k">Kept safe</div><div class="v"><span id="safe">0</span><small>NEAR</small></div><div class="s" id="safeNote">No payments refused yet</div></div>
+    <div class="card stat" id="waitCard"><div class="k">Waiting for you</div><div class="v"><span id="waiting">0</span><small>payments</small></div><div class="s">Approve or reject below</div></div>
+  </div>
+
+
+  <section class="card ctl" aria-label="Controls">
+    <div class="cg"><span class="cl">Normal operation</span><div class="cb"><button class="b-gold" id="step">Let the agent act</button></div></div>
+    <div class="cg"><span class="cl">Test the guardrails</span><div class="cb"><button class="b-danger" id="attack">Send an attack message</button><button class="b-danger" id="attack2" title="Simulates a jailbroken model that obeys the attacker">Attack a compromised agent</button></div></div>
+    <div class="cg" id="xchain" hidden><span class="cl">Cross-chain payout (dry run)</span><div class="cb"><button class="b-ghost" id="quote">Quote a USDC payout on Base</button><button class="b-danger" id="quote2">Quote a payout to a scammer</button></div></div>
+    <div class="cg"><span class="cl">Emergency stop</span><div class="cb"><button class="b-danger" id="pauseTop" title="Stops the agent from making any payment until you resume it">Pause the agent</button></div></div>
+    <div class="cg push"><span class="cl">&nbsp;</span><div class="cb"><button class="b-ghost" id="reset">Reset demo</button></div></div>
+  </section>
+
+  <div class="cols">
+    <div class="stack">
+      <section class="card inbox" aria-label="Approval inbox">
+        <div class="ph"><h2>Approval inbox <span class="count" id="inboxCount" hidden>0</span></h2><span class="sub">Held until you decide</span></div>
+        <div id="inbox"></div>
+      </section>
+      <section class="card tl" aria-label="Activity">
+        <div class="ph"><h2>Activity</h2>
+          <div class="filters" id="filters" role="group" aria-label="Filter">
+            <button class="chip" aria-pressed="true" data-f="all">All</button><button class="chip" aria-pressed="false" data-f="money">Money</button><button class="chip" aria-pressed="false" data-f="held">Held</button><button class="chip" aria-pressed="false" data-f="refused">Refused</button><button class="chip" aria-pressed="false" data-f="control">Controls</button>
+          </div></div>
+        <div id="tape"></div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card rules" aria-label="Rules">
+        <div class="ph"><h2>Guardrails</h2><span class="sub" id="ruleSrc">Checked on every payment</span><button class="b-ghost b-sm" id="editRules" hidden>Edit rules</button></div>
+        <div class="ladder"><div class="bar2" id="bar2"></div><div class="tk" id="tk"></div></div>
+        <div class="rw"><span>Most per payment</span><b id="rCap">-</b></div>
+        <div class="rw"><span>Budget per day</span><b id="rDay">-</b></div>
+        <div class="rw"><span>Asks you above</span><b id="rAsk">-</b></div>
+        <div class="rw"><span>Allowed payees</span><div class="chips" id="rAllow"></div></div>
+        <div class="rw"><span>Never pay</span><div class="chips bad" id="rBlock"></div></div>
+        <div class="rw" style="border:0"><span>Emergency stop</span><b>Pause: guardian or you. Resume: only you</b></div>
+      </section>
+      <section class="card" id="chainCard" aria-label="Live on-chain state" hidden>
+        <div class="ph"><h2>Live on-chain state</h2><button class="b-ghost b-sm" id="chainRefresh">Refresh</button></div>
+        <div class="rules" id="chainBody"><div class="empty">Reading the contract…</div></div>
+      </section>
+      <section class="card" aria-label="Terminal">
+        <details class="term"><summary>Do it from the terminal</summary>
+<pre id="cli"></pre></details>
+      </section>
+    </div>
+  </div>
+
+  <footer><span>Allowance · built for NEAR HACKATHON · runs on NEAR testnet, no real funds</span><span><a href="/docs">Docs</a> · <a href="https://github.com/sasindu-smart/allowance" target="_blank" rel="noopener">GitHub</a></span></footer>
+</main>
+<div class="modal" id="wmodal" hidden role="dialog" aria-modal="true" aria-labelledby="wmt">
+  <div class="mbox">
+    <h2 id="wmt">Connect the owner wallet</h2>
+    <p class="msub">Only the owner account can approve, reject, pause or resume. Your keys stay in your wallet.</p>
+    <div id="wlist" class="wlist"></div>
+    <p class="msub" id="wnote"></p>
+    <button class="b-ghost" id="wclose" style="margin-top:6px">Cancel</button>
+  </div>
+</div>
+<div class="modal" id="rmodal" hidden role="dialog" aria-modal="true" aria-labelledby="rmt">
+  <div class="mbox">
+    <h2 id="rmt">Edit the rules</h2>
+    <p class="msub">Set the limits in demo NEAR. You approve the change in your wallet, and the contract enforces it right away.</p>
+    <div class="frows">
+      <label class="frow" for="fDay"><span><b>Budget per day</b><small>The most the agent can spend in a day</small></span><span class="fin"><input id="fDay" type="number" min="0" step="1" inputmode="decimal"><i>NEAR</i></span></label>
+      <label class="frow" for="fCap"><span><b>Most per payment</b><small>Anything above this is refused</small></span><span class="fin"><input id="fCap" type="number" min="0" step="1" inputmode="decimal"><i>NEAR</i></span></label>
+      <label class="frow" for="fAsk"><span><b>Asks you above</b><small>Payments over this wait for your approval</small></span><span class="fin"><input id="fAsk" type="number" min="0" step="1" inputmode="decimal"><i>NEAR</i></span></label>
+      <label class="frow" for="fHour"><span><b>Payments per hour</b><small>A speed limit. 0 means no limit</small></span><span class="fin"><input id="fHour" type="number" min="0" max="1000" step="1" inputmode="numeric"><i>max</i></span></label>
+    </div>
+    <p class="ferr" id="rerr" hidden></p>
+    <div class="fbtns"><button class="b-gold" id="rsave">Save in wallet</button><button class="b-ghost" id="rclose">Cancel</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmt = (n) => (Math.round(n * 100) / 100).toString();
+const LOOK = {
+  paid: ["allow", "✓", "Paid"], received: ["allow", "↓", "Received"], pending: ["hold", "!", "Held"], blocked: ["block", "✕", "Blocked"],
+  failed: ["block", "✕", "Failed"], rejected: ["block", "✕", "Rejected"], ignored: ["quiet", "–", "Ignored"], quoted: ["hold", "≈", "Quoted"],
+  paused: ["block", "■", "Paused"], resumed: ["allow", "▶", "Resumed"], updated: ["hold", "⚙", "Rules"]
+};
+let S = null, filter = "all", seen = new Set(), first = true, toastT = null;
+
+const call = async (path, method = "GET") => (await fetch(path, { method })).json();
+function toast(t) {
+  const el = $("toast"); const d = describe(t); if (!d) return;
+  el.className = "toast show " + d.tone; el.textContent = d.text.trim();
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 5200);
+}
+function describe(t) {
+  if (!t) return null; const a = fmt(t.amount);
+  switch (t.status) {
+    case "paid": return { tone: "allow", text: `Paid ${a} NEAR to ${t.to}. ${t.reason || ""}` };
+    case "received": return { tone: "allow", text: `Received ${a} NEAR from ${t.from}.` };
+    case "pending": return { tone: "hold", text: `Held ${a} NEAR to ${t.to}. It needs your approval.` };
+    case "blocked": return { tone: "block", text: `Blocked ${a} NEAR to ${t.to}. ${t.reason || ""}` };
+    case "rejected": return { tone: "block", text: `You rejected ${a} NEAR to ${t.to}. No money moved.` };
+    case "failed": return { tone: "block", text: `Failed. ${t.reason || ""}` };
+    case "ignored": return { tone: "quiet", text: `The agent ignored the message. ${t.reason || ""}` };
+    case "paused": return { tone: "block", text: `Agent paused. ${t.reason || ""}` };
+    case "resumed": return { tone: "allow", text: "Agent resumed. Payments are allowed again." };
+    case "updated": return { tone: "hold", text: "Rules updated. The contract now enforces the new limits." };
+    case "quoted": return { tone: "hold", text: `${t.memo}. ${t.reason || ""}` };
+  } return null;
+}
+const inFilter = (t) => filter === "all" ||
+  (filter === "money" && ["paid", "received"].includes(t.status)) || (filter === "held" && t.status === "pending") ||
+  (filter === "refused" && ["blocked", "failed", "rejected"].includes(t.status)) || (filter === "control" && t.type === "control");
+const hm = (iso) => { try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }); } catch { return ""; } };
+
+function evHtml(t) {
+  const [tone, icon, label] = LOOK[t.status] || ["quiet", "·", t.status];
+  const isIn = t.type === "income", isNote = t.type === "note", isCtl = t.type === "control";
+  const who = isIn ? "From " + esc(t.from) : isNote ? "Message from an untrusted sender" : isCtl ? (t.status === "updated" ? "Owner" : "Kill switch") : "To " + esc(t.to);
+  const link = t.txHash ? (String(t.txHash).startsWith("mock-") ? " · " + esc(t.txHash) : ` · <a target="_blank" rel="noopener" href="https://testnet.nearblocks.io/txns/${encodeURIComponent(t.txHash)}">View on explorer</a>`) : "";
+  const amt = (isNote || isCtl) ? "" : `<div class="a ${isIn ? "in" : ""}">${isIn ? "+" : "−"}${fmt(t.amount)}</div>`;
+  const fresh = !first && !seen.has(t.id) ? " fresh" : "";
+  return `<div class="ev${fresh}"><div class="ic ${tone}" aria-hidden="true">${icon}</div>
+    <div><div class="t">${t.status === "updated" ? esc(t.memo) : label + ": " + esc(t.memo)}</div><div class="d">${who}${t.reason ? " · " + esc(t.reason) : ""}${link}</div></div>
+    <div class="r">${amt}<div class="tm">${hm(t.time)}</div></div></div>`;
+}
+
+function render(s) {
+  S = s; const p = s.policy;
+  const contract = s.mode === "near-contract";
+  $("modePill").textContent = contract ? "NEAR testnet · enforced on-chain" : s.mode === "near-testnet" ? "NEAR testnet" : "Demo mode";
+  $("modePill").className = "pill hidem " + (s.mode === "mock" ? "" : "gold");
+  $("account").textContent = s.account || "demo-treasury"; $("agentMode").textContent = s.agentMode || "-";
+  $("enf").textContent = contract ? "Rules enforced by a smart contract" : "Rules enforced by this app's policy engine";
+  $("ruleSrc").textContent = contract ? "Enforced on-chain" : "Checked on every payment";
+  $("status").className = "pill " + (s.paused ? "off" : "ok"); $("status").innerHTML = "<i></i>" + (s.paused ? "Paused" : "Guarding");
+  $("banner").hidden = !s.paused; $("pauseWhy").textContent = s.pauseReason || "";
+  $("pauseTop").hidden = !!s.paused;
+
+  $("balance").textContent = fmt(s.balance); $("spent").textContent = fmt(s.spentToday); $("limit").textContent = fmt(p.dailyLimit);
+  $("fill").style.width = Math.min(100, s.spentToday / p.dailyLimit * 100) + "%";
+  $("spentNote").textContent = fmt(Math.max(0, p.dailyLimit - s.spentToday)) + " NEAR left today";
+  const refused = s.txs.filter((t) => t.type === "payment" && ["blocked", "rejected"].includes(t.status));
+  $("safe").textContent = fmt(refused.reduce((a, t) => a + t.amount, 0));
+  $("safeNote").textContent = refused.length ? refused.length + " payment" + (refused.length > 1 ? "s" : "") + " refused" : "No payments refused yet";
+  const pend = s.txs.filter((t) => t.status === "pending");
+  $("waiting").textContent = pend.length; $("waitCard").classList.toggle("hot", pend.length > 0);
+  $("xchain").hidden = !s.intentsReady;
+
+  $("inboxCount").hidden = !pend.length; $("inboxCount").textContent = pend.length;
+  $("inbox").innerHTML = pend.length ? pend.map((t) => `<div class="it"><div><div class="amt">${fmt(t.amount)}<small>NEAR</small></div><div class="to">${esc(t.to)}</div><div class="why">${esc(t.memo)} · ${esc(t.reason || "")}</div></div>
+      <div class="acts"><button class="b-danger b-sm" onclick="act('reject',${t.id},this)">Reject</button><button class="b-ok b-sm" onclick="act('approve',${t.id},this)">Approve</button></div></div>`).join("")
+    : `<div class="empty"><b>Nothing is waiting for you</b>Payments above ${fmt(p.approvalThreshold)} NEAR will appear here.</div>`;
+
+  const list = s.txs.filter(inFilter);
+  $("tape").innerHTML = list.length ? list.map(evHtml).join("") : `<div class="empty"><b>${s.txs.length ? "Nothing matches this filter" : "Nothing has happened yet"}</b>${s.txs.length ? "Try another filter." : "Choose “Let the agent act” to watch it earn and spend, or send an attack."}</div>`;
+  seen = new Set(s.txs.map((t) => t.id)); first = false;
+
+  const max = p.perTxCap * 1.3, w1 = p.approvalThreshold / max * 100, w2 = (p.perTxCap - p.approvalThreshold) / max * 100;
+  $("bar2").innerHTML = `<div class="sg a" style="width:${w1}%">Pays itself</div><div class="sg h" style="width:${w2}%">Asks you</div><div class="sg b" style="width:${100 - w1 - w2}%">Never</div>`;
+  $("tk").innerHTML = `<span style="left:0">0</span><span style="left:${w1}%">${fmt(p.approvalThreshold)}</span><span style="left:${w1 + w2}%">${fmt(p.perTxCap)}</span>`;
+  $("rCap").textContent = fmt(p.perTxCap) + " NEAR"; $("rDay").textContent = fmt(p.dailyLimit) + " NEAR"; $("rAsk").textContent = fmt(p.approvalThreshold) + " NEAR";
+  $("rAllow").innerHTML = p.allowedRecipients.map((r) => `<code>${esc(r)}</code>`).join(""); $("rBlock").innerHTML = p.blockedRecipients.map((r) => `<code>${esc(r)}</code>`).join("") || "<b>None</b>";
+
+  const c = s.account || "CONTRACT.testnet";
+  $("cli").innerHTML = `<em># read the live rules</em>\nnear contract call-function as-read-only ${esc(c)} get_state json-args "{}" network-config testnet now\n\n<em># pause the agent (owner or guardian)</em>\nnear contract call-function as-transaction ${esc(c)} pause json-args "{\\"reason\\":\\"manual\\"}" prepaid-gas "30 Tgas" attached-deposit "0 NEAR" sign-as OWNER.testnet network-config testnet sign-with-keychain send\n\n<em># resume (owner only)</em>\nnear contract call-function as-transaction ${esc(c)} unpause json-args "{}" prepaid-gas "30 Tgas" attached-deposit "0 NEAR" sign-as OWNER.testnet network-config testnet sign-with-keychain send`;
+}
+
+async function run(btn, path, after) {
+  const all = document.querySelectorAll("button"), label = btn.textContent;
+  all.forEach((b) => (b.disabled = true)); btn.textContent = "Working…";
+  try { const s = await call(path, "POST"); render(s); if (after) after(s); }
+  catch { toast({ status: "failed", reason: "Could not reach the server. Is npm start still running?" }); }
+  finally { btn.textContent = label; all.forEach((b) => (b.disabled = false)); }
+}
+let CFG = { walletReady: false }, W = { ready: false, account: null, isOwner: false };
+const viaWallet = () => CFG.walletReady && W.isOwner;
+const METHOD = { approve: "approve", reject: "reject", pause: "pause", unpause: "unpause", set_policy: "set_policy" };
+
+// Sign in the owner's wallet, then let the server verify the transaction on-chain.
+async function walletAction(action, id, btn) {
+  const all = document.querySelectorAll("button"), label = btn ? btn.textContent : "";
+  all.forEach((b) => (b.disabled = true)); if (btn) btn.textContent = "Check your wallet…";
+  try {
+    let args = {};
+    if (action === "approve" || action === "reject") { const tx = S.txs.find((t) => t.id === id); args = { id: tx.contractId }; }
+    if (action === "pause") args = { reason: "Paused by the owner" };
+    try { sessionStorage.setItem("allowance.pending", JSON.stringify({ action, id })); } catch {}
+    const hash = await window.Wallet.sign(METHOD[action], args);
+    if (!hash) { toast({ status: "quoted", memo: "Waiting for your wallet", reason: "Approve it there. You will come back here automatically." }); return; }
+    await syncTx(action, id, hash);
+  } catch (e) { toast({ status: "failed", reason: "Wallet: " + (e && e.message ? e.message : e) }); }
+  finally { if (btn) btn.textContent = label; all.forEach((b) => (b.disabled = false)); try { sessionStorage.removeItem("allowance.pending"); } catch {} }
+}
+/* ---------- edit rules (owner wallet) ---------- */
+let chainNow = null;
+$("editRules").onclick = async () => {
+  try { chainNow = await (await fetch("/api/chain", { cache: "no-store" })).json(); if (chainNow.error) throw new Error(chainNow.error); } catch (e) { toast({ status: "failed", reason: "Could not read the rules: " + e.message }); return; }
+  const k = CFG.scale || 0.01, d = (n) => Math.round((n / k) * 100) / 100;
+  $("fDay").value = d(chainNow.policy.dailyLimit); $("fCap").value = d(chainNow.policy.perTxCap);
+  $("fAsk").value = d(chainNow.policy.approvalThreshold); $("fHour").value = chainNow.policy.maxPerHour || 0;
+  $("rerr").hidden = true; $("rmodal").hidden = false; $("fDay").focus();
+};
+$("rclose").onclick = () => ($("rmodal").hidden = true);
+$("rmodal").addEventListener("click", (e) => { if (e.target.id === "rmodal") $("rmodal").hidden = true; });
+$("rsave").onclick = async (e) => {
+  const k = CFG.scale || 0.01, bad = (m) => { $("rerr").textContent = m; $("rerr").hidden = false; };
+  const day = Number($("fDay").value), cap = Number($("fCap").value), ask = Number($("fAsk").value), hour = Number($("fHour").value);
+  if (![day, cap, ask].every((n) => Number.isFinite(n) && n > 0)) return bad("Enter amounts above zero.");
+  if (cap > day) return bad("Most per payment cannot be more than the daily budget.");
+  if (ask > cap) return bad("The approval line cannot be above the per-payment limit.");
+  if (!Number.isInteger(hour) || hour < 0 || hour > 1000) return bad("Payments per hour must be a whole number from 0 to 1000.");
+  if (day * k > 1) return bad("On testnet the daily budget is limited to " + Math.floor(1 / k) + " demo NEAR.");
+  const y = (v) => String(BigInt(Math.round(v * k * 1e6)) * 10n ** 18n);
+  const policy = { dailyLimit: y(day), perTxCap: y(cap), approvalThreshold: y(ask), allowed: chainNow.policy.allowed, blocked: chainNow.policy.blocked, maxPerHour: hour, recipientDailyCaps: chainNow.policy.recipientDailyCaps || {} };
+  $("rmodal").hidden = true; e.currentTarget.disabled = true;
+  try {
+    const hash = await window.Wallet.sign("set_policy", { policy });
+    if (!hash) { toast({ status: "quoted", memo: "Waiting for your wallet", reason: "Approve it there." }); return; }
+    await syncTx("set_policy", null, hash);
+  } catch (err) { toast({ status: "failed", reason: "Wallet: " + (err && err.message ? err.message : err) }); }
+  finally { e.currentTarget.disabled = false; }
+};
+async function syncTx(action, id, txHash) {
+  const r = await fetch("/api/owner-sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, id, txHash }) });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "The server could not verify the transaction");
+  render(d); toast(d.entry);
+  loadChain();
+}
+window.act = (k, id, b) => viaWallet() ? walletAction(k, id, b) : run(b, "/api/" + k + "/" + id, (s) => toast(s.txs.find((t) => t.id === id)));
+const hook = (id, path, q) => ($(id).onclick = (e) => run(e.currentTarget, path, (s) => toast(s.entry)));
+hook("step", "/api/step"); hook("attack", "/api/attack"); hook("attack2", "/api/attack?compromised=1");
+hook("quote", "/api/intents/quote"); hook("quote2", "/api/intents/quote?scenario=scam");
+$("pauseTop").onclick = (e) => viaWallet() ? walletAction("pause", null, e.currentTarget) : run(e.currentTarget, "/api/pause", (s) => toast(s.entry));
+$("resumeTop").onclick = (e) => viaWallet() ? walletAction("unpause", null, e.currentTarget) : run(e.currentTarget, "/api/resume", (s) => toast(s.entry));
+$("reset").onclick = (e) => run(e.currentTarget, "/api/reset");
+$("filters").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return; filter = b.dataset.f; document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c === b ? "true" : "false")); render(S); });
+$("csv").onclick = () => {
+  if (!S) return; const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const rows = [["time", "type", "status", "amount", "party", "memo", "reason", "tx"]].concat(S.txs.map((t) => [t.time, t.type, t.status, t.amount ?? "", t.to || t.from || "", t.memo, t.reason || "", t.txHash || ""]));
+  const url = URL.createObjectURL(new Blob([rows.map((r) => r.map(q).join(",")).join("\n")], { type: "text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = "allowance-activity.csv"; a.click(); URL.revokeObjectURL(url);
+};
+
+/* ---------- live on-chain state ---------- */
+async function loadChain() {
+  if (!CFG.walletReady) return;
+  $("chainCard").hidden = false;
+  try {
+    const c = await (await fetch("/api/chain", { cache: "no-store" })).json();
+    if (c.error) throw new Error(c.error);
+    call("/api/state").then(render).catch(() => {});
+    const link = `https://testnet.nearblocks.io/address/${encodeURIComponent(c.contractId)}`;
+    $("chainBody").innerHTML =
+      `<div class="rw"><span>Status</span><b class="${c.paused ? "no" : ""}" style="color:var(--${c.paused ? "block" : "allow"})">${c.paused ? "Paused" : "Guarding"}</b></div>` +
+      `<div class="rw"><span>Spent today (chain)</span><b>${fmt(c.spentToday)} of ${fmt(c.policy.dailyLimit)} NEAR</b></div>` +
+      `<div class="rw"><span>Held payments</span><b>${c.pending}</b></div>` +
+      `<div class="rw"><span>Owner</span><b class="mono">${esc(c.owner)}</b></div>` +
+      `<div class="rw"><span>Agent</span><b class="mono">${esc(c.agent)}</b></div>` +
+      `<div class="rw"><span>Guardian</span><b class="mono">${esc(c.guardian || "none")}</b></div>` +
+      `<div class="rw" style="border:0"><span>Contract</span><a class="mono" href="${link}" target="_blank" rel="noopener">${esc(c.contractId)}</a></div>`;
+  } catch (e) { $("chainBody").innerHTML = `<div class="empty"><b>Could not read the chain</b>${esc(e.message)}</div>`; }
+}
+$("chainRefresh").onclick = loadChain;
+
+/* ---------- wallet ---------- */
+function paintWallet(w) {
+  W = w; $("acctPill").hidden = !w.account; $("acctPill").textContent = w.account || "";
+  $("walletBtn").textContent = w.account ? "Disconnect" : "Connect wallet";
+  const wrong = !!w.account && !w.isOwner && CFG.walletReady;
+  $("wrongAcct").hidden = !wrong;
+  $("editRules").hidden = !(CFG.walletReady && w.isOwner);
+  if (wrong) $("wrongTxt").innerHTML = `<b>Connected as ${esc(w.account)}.</b> Only the owner (${esc(CFG.owner)}) can approve, reject, pause or resume.`;
+}
+function openModal() {
+  const opts = window.Wallet ? window.Wallet.options() : [];
+  $("wlist").innerHTML = opts.map((o) => `<button class="wopt" data-id="${esc(o.id)}"><span>${esc(o.label)}<small>${esc(o.note)}</small></span><span>›</span></button>`).join("") || '<p class="msub">The wallet library is still loading, or it could not be loaded.</p>';
+  $("wnote").textContent = "Testnet only. Use the owner account: " + (CFG.owner || "");
+  $("wmodal").hidden = false;
+}
+$("walletBtn").onclick = async () => {
+  if (!CFG.walletReady) { toast({ status: "quoted", memo: "Wallet connect", reason: "Available in smart-contract mode (PAYMENT_MODE=near-contract). See the docs." }); return; }
+  if (W.account) { await window.Wallet.disconnect(); return; }
+  openModal();
+};
+$("wclose").onclick = () => ($("wmodal").hidden = true);
+$("wmodal").addEventListener("click", (e) => { if (e.target.id === "wmodal") $("wmodal").hidden = true; });
+$("wswitch").onclick = () => window.Wallet.disconnect();
+$("wlist").addEventListener("click", async (e) => {
+  const b = e.target.closest(".wopt"); if (!b) return;
+  $("wmodal").hidden = true;
+  try { await window.Wallet.connect(b.dataset.id); }
+  catch (err) { toast({ status: "failed", reason: "Could not connect: " + (err && err.message ? err.message : err) }); }
+});
+async function bootWallet() {
+  try { CFG = await (await fetch("/api/config")).json(); } catch { return; }
+  if (!CFG.walletReady) { $("walletBtn").title = "Available in smart-contract mode"; return; }
+  loadChain();
+  const go = async () => {
+    window.Wallet.onChange(paintWallet);
+    paintWallet(await window.Wallet.init(CFG));
+    // Back from a redirect wallet (MyNearWallet): record the transaction it just sent.
+    const hash = new URLSearchParams(location.search).get("transactionHashes");
+    let pend = null; try { pend = JSON.parse(sessionStorage.getItem("allowance.pending") || "null"); } catch {}
+    if (hash && pend) {
+      history.replaceState(null, "", location.pathname);
+      try { await syncTx(pend.action, pend.id, hash.split(",").pop()); } catch (e) { toast({ status: "failed", reason: e.message }); }
+      try { sessionStorage.removeItem("allowance.pending"); } catch {}
+    }
+  };
+  if (window.Wallet) go(); else window.addEventListener("wallet-module-ready", go, { once: true });
+}
+call("/api/state").then(render).then(bootWallet);
+</script>
+<script type="module" src="/wallet.js"></script>
+</body>
+</html>

@@ -8,8 +8,9 @@
 // non-null default, and a string is the simplest thing that always round-trips).
 //
 // Who can do what:
-//   agent  -> request_payment
-//   owner  -> approve, reject, set_policy, set_agent
+//   agent    -> request_payment
+//   owner    -> approve, reject, set_policy, set_agent, set_guardian, pause, unpause
+//   guardian -> pause only (a circuit breaker; it can never pay, approve or unpause)
 //   anyone -> get_state (view), and can send NEAR to this account to fund it
 
 import { NearBindgen, near, call, view, initialize, NearPromise } from "near-sdk-js";
@@ -17,6 +18,7 @@ import {
   NEAR, defaultPolicy, newState,
   requestPayment as coreRequestPayment, approve as coreApprove, reject as coreReject,
   setPolicy as coreSetPolicy, setAgent as coreSetAgent,
+  pause as corePause, unpause as coreUnpause, setGuardian as coreSetGuardian,
 } from "./policy-core.js";
 
 // Kept back so the account can always pay for its own storage.
@@ -57,11 +59,13 @@ class Allowance {
   }
 
   @initialize({})
-  init({ owner, agent, allowed, blocked }) {
+  init({ owner, agent, guardian, allowed, blocked, maxPerHour, recipientDailyCaps }) {
     const policy = defaultPolicy();
     policy.allowed = allowed || [];
     policy.blocked = blocked || [];
-    this.save(newState(owner, agent, policy));
+    policy.maxPerHour = maxPerHour ?? 0;
+    policy.recipientDailyCaps = recipientDailyCaps || {};
+    this.save(newState(owner, agent, policy, guardian ?? null));
   }
 
   @call({})
@@ -92,6 +96,25 @@ class Allowance {
   set_agent({ agent }) {
     const s = this.load();
     return this.finish(s, coreSetAgent(s, this.ctx(), agent));
+  }
+
+  // Circuit breaker: owner or guardian pauses, only the owner unpauses.
+  @call({})
+  pause({ reason }) {
+    const s = this.load();
+    return this.finish(s, corePause(s, this.ctx(), reason));
+  }
+
+  @call({})
+  unpause() {
+    const s = this.load();
+    return this.finish(s, coreUnpause(s, this.ctx()));
+  }
+
+  @call({})
+  set_guardian({ guardian }) {
+    const s = this.load();
+    return this.finish(s, coreSetGuardian(s, this.ctx(), guardian ?? null));
   }
 
   @view({})

@@ -1,0 +1,16 @@
+# One-click hosting on Render (free plan). The public demo runs in "mock" mode:
+# no keys, no real money, and visitors cannot use up the on-chain daily budget.
+# The on-chain proof (real testnet contract) is linked in the README.
+services:
+  - type: web
+    name: allowance
+    runtime: node
+    plan: free
+    buildCommand: echo "nothing to build"
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: PAYMENT_MODE
+        value: mock
+      - key: NODE_VERSION
+        value: "20"

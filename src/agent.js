@@ -87,7 +87,7 @@ export class Agent {
     if (d.action !== "pay") {
       return treasury.log({ type: "note", memo: text, status: "ignored", reason: "Agent ignored it: " + d.memo });
     }
-    return treasury.requestPayment({ to: d.to, amount: d.amount, memo: "Attack message: " + text.slice(0, 120) });
+    return treasury.requestPayment({ to: d.to, amount: d.amount, memo: "Attack message: " + text.slice(0, 120), untrusted: true });
   }
 
   nextAttack() {

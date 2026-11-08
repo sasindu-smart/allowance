@@ -21,3 +21,13 @@ Amounts are yoctoNEAR strings. Defaults: daily limit 0.5 NEAR, per-payment cap 0
     # {"owner":"OWNER.testnet","agent":"AGENT.testnet","allowed":["data.testnet","research.testnet"],"blocked":[]}
 
 `init` takes the owner explicitly and runs in the same transaction as the deploy.
+
+## v2: kill switch, guardian, rate limit, per-recipient caps
+
+Init now accepts `guardian`, `maxPerHour` and `recipientDailyCaps`:
+
+```
+{"owner":"OWNER.testnet","agent":"AGENT.testnet","guardian":"GUARD.testnet","allowed":["a.testnet"],"blocked":[],"maxPerHour":10,"recipientDailyCaps":{}}
+```
+
+New methods: `pause({reason})` (owner or guardian), `unpause()` (owner only), `set_guardian({guardian})` (owner). While paused, `request_payment` is blocked.

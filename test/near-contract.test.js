@@ -110,3 +110,61 @@ test("snapshot reports contract mode", () => {
   assert.equal(s.mode, "near-contract");
   assert.equal(s.account, "vault.testnet");
 });
+
+// ---- v2: kill switch + guardian circuit breaker ----
+const mkG = (run) => new ContractTreasury({
+  policy: DEFAULT_POLICY, contractId: "vault.testnet", agent: "agent.testnet", owner: "owner.testnet",
+  guardian: "guard.testnet", recipientMap: { "data-api.near": "data.testnet" }, scale: 0.01, run,
+});
+const signerOf = (args) => args[args.indexOf("sign-as") + 1];
+
+test("untrusted blocked payment makes the guardian pause on-chain; owner resumes", async () => {
+  const calls = [];
+  const run = async (args) => {
+    calls.push({ method: args[4], signer: signerOf(args) });
+    if (args[4] === "request_payment") return cli("payment_blocked", { reason: "Recipient is not on the allowlist" });
+    if (args[4] === "pause") return cli("paused", {}, "TXP");
+    return cli("unpaused", {}, "TXU");
+  };
+  const t = mkG(run);
+  const e = await t.requestPayment({ to: "scam.near", amount: 8, memo: "x", untrusted: true });
+  assert.equal(e.status, "blocked");
+  assert.equal(t.paused, true);
+  assert.deepEqual(calls.map((c) => [c.method, c.signer]), [["request_payment", "agent.testnet"], ["pause", "guard.testnet"]]);
+  // while paused nothing reaches the chain
+  const n = calls.length;
+  const e2 = await t.requestPayment({ to: "data-api.near", amount: 5, memo: "y" });
+  assert.equal(e2.status, "blocked");
+  assert.match(e2.reason, /paused/i);
+  assert.equal(calls.length, n);
+  const r = await t.resume();
+  assert.equal(r.status, "resumed");
+  assert.equal(t.paused, false);
+  assert.deepEqual(calls.at(-1), { method: "unpause", signer: "owner.testnet" });
+});
+
+test("a trusted blocked payment does not trigger the guardian; manual pause is signed by the owner", async () => {
+  const calls = [];
+  const run = async (args) => { calls.push(args[4]); return args[4] === "pause" ? cli("paused", {}) : cli("payment_blocked", { reason: "nope" }); };
+  const t = mkG(run);
+  await t.requestPayment({ to: "scam.near", amount: 8, memo: "x" });
+  assert.equal(t.paused, false);
+  const p = await t.pause();
+  assert.equal(p.status, "paused");
+  assert.match(p.reason, /owner/);
+});
+
+test("failed on-chain pause is reported, not hidden", async () => {
+  const t = mkG(async () => { throw new Error("rpc down"); });
+  const p = await t.pause();
+  assert.equal(p.status, "failed");
+  assert.equal(t.paused, false);
+});
+
+test("syncFromChain reads the contract's daily total in demo units", async () => {
+  const state = { owner: "o.testnet", agent: "a.testnet", paused: false, spentToday: "480000000000000000000000", pending: {}, policy: { perTxCap: "2", dailyLimit: "500000000000000000000000", approvalThreshold: "1", allowed: [], blocked: [], maxPerHour: 10 } };
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ result: { result: Array.from(Buffer.from(JSON.stringify(state))) } }) });
+  const t = new ContractTreasury({ policy: DEFAULT_POLICY, contractId: "c.testnet", agent: "a.testnet", owner: "o.testnet", scale: 0.01, fetchImpl });
+  await t.syncFromChain();
+  assert.equal(t.spentToday, 48);
+});

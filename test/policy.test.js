@@ -66,3 +66,18 @@ test("treasury: rejected payment moves no money", async () => {
   assert.equal(tx.status, "rejected");
   assert.equal(t.balance, 100);
 });
+
+import { Treasury as T2 } from "../src/ledger.js";
+import { mockPayments as MP2 } from "../src/payments.js";
+test("kill switch refuses everything until resumed; untrusted blocked payment auto-pauses", async () => {
+  const t = new T2(DEFAULT_POLICY, MP2);
+  await t.pause();
+  const blocked = await t.requestPayment({ to: "data-api.near", amount: 5, memo: "x" });
+  assert.equal(blocked.status, "blocked");
+  assert.match(blocked.reason, /paused/i);
+  await t.resume();
+  assert.equal((await t.requestPayment({ to: "data-api.near", amount: 5, memo: "x" })).status, "paid");
+  await t.requestPayment({ to: "scam-giveaway.near", amount: 8, memo: "x", untrusted: true });
+  assert.equal(t.paused, true);
+  assert.equal(t.snapshot().paused, true);
+});
