@@ -6,6 +6,8 @@ Allowance lets an AI agent earn and spend money on NEAR, but only inside rules a
 
 Built for NEAR HACKATHON. Tracks: **Autonomous Business**, **AI Security & Defense**, **Agent Economy**.
 
+**Try it:** https://allowance-khm3.onrender.com (public demo, simulated payments, nothing to install; the first load can take up to a minute on the free host). The real on-chain run, with its transactions on NEAR testnet, is in [Proof on NEAR testnet](#proof-on-near-testnet) below.
+
 ## The problem
 
 AI agents are starting to earn and spend money. A wallet with no limits is dangerous: one prompt injection or one scam message and the funds are gone. People need a simple way to say "spend freely inside these limits, ask me beyond them, never pay these addresses", and to know the limit really holds.

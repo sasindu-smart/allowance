@@ -462,7 +462,12 @@ $("wlist").addEventListener("click", async (e) => {
 });
 async function bootWallet() {
   try { CFG = await (await fetch("/api/config")).json(); } catch { return; }
-  if (!CFG.walletReady) { $("walletBtn").title = "Available in smart-contract mode"; return; }
+  if (!CFG.walletReady) {
+    // Public demo: payments are simulated. Point visitors to the real on-chain transactions instead.
+    const b = $("walletBtn"); b.textContent = "See on-chain proof"; b.title = "This public demo is simulated. The real testnet contract and its transactions are listed on the home page.";
+    b.onclick = () => { location.href = "/#proof"; };
+    return;
+  }
   loadChain();
   const go = async () => {
     window.Wallet.onChange(paintWallet);
