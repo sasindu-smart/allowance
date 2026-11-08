@@ -130,6 +130,7 @@
   .mbox { width: min(440px, 100%); border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(180deg, var(--panel-hi), var(--panel)); padding: 24px; }
   .mbox h2 { font-size: 22px; } .msub { color: var(--muted); font-size: 14px; margin: 8px 0 14px; }
   .wlist { display: grid; gap: 10px; } .wopt { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 14px 16px; border-radius: 13px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+  a.wopt { color: inherit; text-decoration: none; font-weight: 600; font-size: 14px; }
   .wopt:hover { border-color: var(--gold-deep); } .wopt small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
   .toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; max-width: min(560px, 92vw); padding: 13px 18px; border-radius: 14px; border: 1px solid; font-weight: 500; z-index: 30; transition: all .3s; backdrop-filter: blur(10px); }
   .toast.show { opacity: 1; transform: translate(-50%, 0); } .toast.allow { background: rgba(14,40,32,.92); color: var(--allow); border-color: var(--allow-line); }
@@ -455,7 +456,7 @@ $("wclose").onclick = () => ($("wmodal").hidden = true);
 $("wmodal").addEventListener("click", (e) => { if (e.target.id === "wmodal") $("wmodal").hidden = true; });
 $("wswitch").onclick = () => window.Wallet.disconnect();
 $("wlist").addEventListener("click", async (e) => {
-  const b = e.target.closest(".wopt"); if (!b) return;
+  const b = e.target.closest(".wopt"); if (!b || b.tagName === "A") return;
   $("wmodal").hidden = true;
   try { await window.Wallet.connect(b.dataset.id); }
   catch (err) { toast({ status: "failed", reason: "Could not connect: " + (err && err.message ? err.message : err) }); }
@@ -463,9 +464,17 @@ $("wlist").addEventListener("click", async (e) => {
 async function bootWallet() {
   try { CFG = await (await fetch("/api/config")).json(); } catch { return; }
   if (!CFG.walletReady) {
-    // Public demo: payments are simulated. Point visitors to the real on-chain transactions instead.
-    const b = $("walletBtn"); b.textContent = "See on-chain proof"; b.title = "This public demo is simulated. The real testnet contract and its transactions are listed on the home page.";
-    b.onclick = () => { location.href = "/#proof"; };
+    // Public demo: payments are simulated, so there is no wallet to connect. Explain that and point to the real proof.
+    const nav = document.querySelector(".nav .l:last-of-type");
+    if (nav) nav.insertAdjacentHTML("afterend", '<a class="l" href="/#proof">On-chain proof</a>');
+    $("walletBtn").onclick = () => {
+      $("wmt").textContent = "Wallet connect";
+      document.querySelector("#wmodal .msub").textContent = "This public demo is simulated, so there is no wallet to connect here and no money moves. In the real version the owner signs approvals, pauses and rule changes in a NEAR wallet (Meteor), and the smart contract enforces them on testnet.";
+      $("wlist").innerHTML = '<a class="wopt" href="/#proof"><span>See the real on-chain transactions<small>Deploy, paid, blocked, guardian pause, owner approve, owner resume</small></span><span>›</span></a>' +
+        '<a class="wopt" href="/docs"><span>How the owner wallet works<small>Docs</small></span><span>›</span></a>';
+      $("wnote").textContent = "";
+      $("wmodal").hidden = false;
+    };
     return;
   }
   loadChain();
