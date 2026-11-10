@@ -6,6 +6,8 @@ Allowance lets an AI agent earn and spend money on NEAR, but only inside rules a
 
 Built for NEAR HACKATHON. Tracks: **Autonomous Business**, **AI Security & Defense**, **Agent Economy**.
 
+My other, independent NEAR HACKATHON project is **CareFund**, community grants and loans for medical help, with money paid straight to the hospital: https://github.com/sasindu-smart/carefund (demo: https://carefund-ijf9.onrender.com).
+
 **Try it:** https://allowance-khm3.onrender.com (public demo, simulated payments, nothing to install; the first load can take up to a minute on the free host). The real on-chain run, with its transactions on NEAR testnet, is in [Proof on NEAR testnet](#proof-on-near-testnet) below.
 
 ## The problem
